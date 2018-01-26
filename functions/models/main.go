@@ -1,10 +1,15 @@
 package main
 
 import (
-    "fmt"
-    "github.com/aws/aws-lambda-go/events"
+    	"fmt"
+    	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"strings"
+	"encoding/json"
+)
+
+var (
+	modelAPI = NewModel()
 )
 
 func handleGet(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -12,7 +17,18 @@ func handleGet(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRes
 }
 
 func handlePost(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	return events.APIGatewayProxyResponse{Body: "models post\n", StatusCode: 200}, nil
+	var model Model
+	err := json.Unmarshal([]byte(request.Body), &model)
+	if err != nil {
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400 }, nil
+	}
+
+	err = modelAPI.CreateModel(&model)
+	if err != nil {
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500 }, nil
+	}
+
+	return events.APIGatewayProxyResponse{Body: request.Body, StatusCode: 200}, nil
 }
 
 func handlePut(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
