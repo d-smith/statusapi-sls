@@ -20,5 +20,5 @@ GOOS=linux go build -o bin/main
 3. Deploy!
 
 ```
-serverless deploy
+serverless deploy --aws-profile <profile>
 ```

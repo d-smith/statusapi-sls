@@ -40,20 +40,32 @@ functions:
     handler: bin/models
     events:
       - http:
+          path: models/{id}
+          method: get
+      - http:
+          path: models/{id}
+          method: put
+      - http:
           path: models
           method: get
+      - http:
+          path: models
+          method: post
   instances:
     handler: bin/instances
     events:
       - http:
           path: instances
           method: get
+      - http:
+          path: instances/{id}
+          method: post
   statusevents:
     handler: bin/events
     events:
       - http:
           path: events
-          method: get
+          method: post
 
 
 #    The following are a few example events you can configure
