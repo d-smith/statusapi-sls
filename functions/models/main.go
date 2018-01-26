@@ -12,8 +12,31 @@ var (
 	modelAPI = NewModel()
 )
 
-func handleGet(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+
+func listModels() (events.APIGatewayProxyResponse, error) {
+	fmt.Println("listModels")
 	return events.APIGatewayProxyResponse{Body: "models get\n", StatusCode: 200}, nil
+}
+
+func getModel(name string)(events.APIGatewayProxyResponse, error) {
+	fmt.Println("getModel", name)
+	return events.APIGatewayProxyResponse{Body: "models get\n", StatusCode: 200}, nil
+}
+
+func handleGet(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	//Is there an id from the path?
+	var name string
+	if len(request.PathParameters) > 0 {
+		name = request.PathParameters["name"]
+	}
+
+	switch name {
+	case "":
+		return listModels()
+	default:
+		return getModel(name)
+	}
+
 }
 
 func handlePost(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -32,6 +55,12 @@ func handlePost(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRe
 }
 
 func handlePut(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	var name string
+	if len(request.PathParameters) > 0 {
+		name = request.PathParameters["name"]
+	}
+
+	fmt.Println("update model", name)
 	return events.APIGatewayProxyResponse{Body: "models put\n", StatusCode: 200}, nil
 }
 

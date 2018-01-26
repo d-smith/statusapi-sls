@@ -40,10 +40,10 @@ functions:
     handler: bin/models
     events:
       - http:
-          path: models/{id}
+          path: models/{name}
           method: get
       - http:
-          path: models/{id}
+          path: models/{name}
           method: put
       - http:
           path: models
@@ -59,7 +59,7 @@ functions:
           method: get
       - http:
           path: instances/{id}
-          method: post
+          method: put
   statusevents:
     handler: bin/events
     events:
