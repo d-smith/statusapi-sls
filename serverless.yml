@@ -59,7 +59,7 @@ functions:
           method: get
       - http:
           path: instances/{id}
-          method: put
+          method: get
   statusevents:
     handler: bin/events
     events:
