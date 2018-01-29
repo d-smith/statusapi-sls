@@ -13,3 +13,9 @@ Use the make file to build the binaries needed to deploy. To deploy:
 ```
 serverless deploy --aws-profile <profile>
 ```
+
+Example event payload:
+
+```
+{"correlation_id":"1a","event_id":"1","model_ids":["model_1"],"state":"Order Received"}
+```
