@@ -6,7 +6,17 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"strings"
 	"encoding/json"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"net/http"
 )
+
+type AWSContext struct {
+	ddbSvc dynamodbiface.DynamoDBAPI
+}
+
 
 var (
 	modelAPI = NewModel()
@@ -23,8 +33,8 @@ func getModel(name string)(events.APIGatewayProxyResponse, error) {
 	return events.APIGatewayProxyResponse{Body: "models get\n", StatusCode: 200}, nil
 }
 
-func handleGet(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	//Is there an id from the path?
+func handleGet(awsContext *AWSContext, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	//Is there a name from the path?
 	var name string
 	if len(request.PathParameters) > 0 {
 		name = request.PathParameters["name"]
@@ -39,22 +49,27 @@ func handleGet(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRes
 
 }
 
-func handlePost(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func handlePost(awsContext *AWSContext, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	var model Model
 	err := json.Unmarshal([]byte(request.Body), &model)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400 }, nil
 	}
 
-	err = modelAPI.CreateModel(&model)
+	err = modelAPI.CreateModel(awsContext, &model)
 	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			if  aerr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
+				return events.APIGatewayProxyResponse{Body: "Model with provide name already exists.", StatusCode: http.StatusBadRequest }, nil
+			}
+		}
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500 }, nil
 	}
 
 	return events.APIGatewayProxyResponse{Body: request.Body, StatusCode: 200}, nil
 }
 
-func handlePut(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func handlePut(awsContext *AWSContext, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	var name string
 	if len(request.PathParameters) > 0 {
 		name = request.PathParameters["name"]
@@ -69,27 +84,37 @@ func handleOtherRequests(request events.APIGatewayProxyRequest) (events.APIGatew
 }
 
 
-func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	fmt.Println("Received body: ", request.Body)
+func makeHandler(awsContext *AWSContext) func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	return func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+		fmt.Println("Received body: ", request.Body)
 
-	var response events.APIGatewayProxyResponse
-	var err error
+		var response events.APIGatewayProxyResponse
+		var err error
 
-	method := strings.ToLower(request.HTTPMethod)
-	switch method {
-	case "get":
-		response, err = handleGet(request)
-	case "post":
-		response, err = handlePost(request)
-	case "put":
-		response, err = handlePut(request)
-	default:
-		response, err = handleOtherRequests(request)
+		method := strings.ToLower(request.HTTPMethod)
+		switch method {
+		case "get":
+			response, err = handleGet(awsContext, request)
+		case "post":
+			response, err = handlePost(awsContext, request)
+		case "put":
+			response, err = handlePut(awsContext, request)
+		default:
+			response, err = handleOtherRequests(request)
+		}
+
+		return response, err
 	}
-
-	return response, err
 }
 
 func main() {
-	lambda.Start(Handler)
+	var awsContext AWSContext
+
+	sess := session.New()
+	svc := dynamodb.New(sess)
+
+	awsContext.ddbSvc = svc
+
+	handler := makeHandler(&awsContext)
+	lambda.Start(handler)
 }
