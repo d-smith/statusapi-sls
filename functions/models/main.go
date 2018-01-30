@@ -24,7 +24,7 @@ func getModel(name string)(events.APIGatewayProxyResponse, error) {
 }
 
 func handleGet(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	//Is there an id from the path?
+	//Is there a name from the path?
 	var name string
 	if len(request.PathParameters) > 0 {
 		name = request.PathParameters["name"]

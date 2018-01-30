@@ -4,6 +4,28 @@ service: statusapi-sls
 provider:
   name: aws
   runtime: go1.x
+  apiKeys:
+    - statusapi-${opt:stage, self:provider.stage}
+  environment:
+    MODEL_TABLE: ${self:service}-${opt:stage, self:provider.stage}-model
+    INSTANCE_TABLE: ${self:service}-${opt:stage, self:provider.stage}-instance
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.MODEL_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.INSTANCE_TABLE}"
 
 # you can overwrite defaults here
 #  stage: dev
@@ -100,6 +122,50 @@ functions:
 #    Define function environment variables here
 #    environment:
 #      variable2: value2
+
+resources:
+  Resources:
+
+
+
+    ModelTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: name
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: name
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.MODEL_TABLE}
+
+
+    InstanceTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: correlationId
+            AttributeType: S
+          -
+            AttributeName: eventTimestamp
+            AttributeType: N
+        KeySchema:
+          -
+            AttributeName: correlationId
+            KeyType: HASH
+          -
+            AttributeName: eventTimestamp
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.INSTANCE_TABLE}
 
 # you can add CloudFormation resource templates here
 #resources:
