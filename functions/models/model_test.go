@@ -4,7 +4,18 @@ import (
 	"testing"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/stretchr/testify/assert"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
+
+type dynamoDBMockery struct {
+	dynamodbiface.DynamoDBAPI
+}
+
+func (m *dynamoDBMockery) PutItem(*dynamodb.PutItemInput) (*dynamodb.PutItemOutput, error) {
+	var out dynamodb.PutItemOutput
+	return &out, nil
+}
 
 func TestModelCreate(t *testing.T) {
 	tests := []struct {
@@ -27,9 +38,14 @@ func TestModelCreate(t *testing.T) {
 		},
 	}
 
+
+	var awsContext AWSContext
+	var myMock dynamoDBMockery
+	awsContext.ddbSvc = &myMock
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			response,err := handlePost(test.request)
+			response,err := handlePost(&awsContext,test.request)
 			assert.IsType(t, test.err, err)
 			assert.Equal(t, test.expect, response.StatusCode)
 		})
