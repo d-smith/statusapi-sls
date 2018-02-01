@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"os"
 	"time"
+	"github.com/d-smith/statusapi-sls/awsctx"
 )
 
 type StatusEvent struct {
@@ -24,7 +25,7 @@ func NewEventSvc() *EventSvc {
 	return &EventSvc{}
 }
 
-func (es *EventSvc) StoreEvent(awsContext *AWSContext, event *StatusEvent) error {
+func (es *EventSvc) StoreEvent(awsContext *awsctx.AWSContext, event *StatusEvent) error {
 	now := time.Now()
 	timestampMillis := now.UnixNano() / 1000000
 	input := &dynamodb.PutItemInput{
@@ -44,7 +45,7 @@ func (es *EventSvc) StoreEvent(awsContext *AWSContext, event *StatusEvent) error
 		},
 		TableName: aws.String(instanceTable),
 	}
-	_, err := awsContext.ddbSvc.PutItem(input)
+	_, err := awsContext.DynamoDBSvc.PutItem(input)
 
 	return err
 }
