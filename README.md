@@ -19,3 +19,9 @@ Example event payload:
 ```
 {"correlation_id":"1a","event_id":"1","model_ids":["model_1"],"state":"Order Received"}
 ```
+
+Example model definition:
+
+```
+{"name":"model1", "states":["s1", "s2", "s3"]}
+```
