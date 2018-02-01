@@ -10,8 +10,8 @@ import (
 )
 
 type Model struct {
-	Name   string   `json:"name"`
-	States []string `json:"states"`
+	Name  string   `json:"name"`
+	Steps []string `json:"steps"`
 }
 
 type ModelSvc struct{}
@@ -34,7 +34,7 @@ func slice2SS(strings []string) []*string {
 }
 
 func (m *ModelSvc) CreateModel(awsContext *awsctx.AWSContext, model *Model) error {
-	fmt.Printf("Creating model %s with states %v", model.Name, model.States)
+	fmt.Printf("Creating model %s with steps %v", model.Name, model.Steps)
 
 	uniqueName := expression.AttributeNotExists(expression.Name("name"))
 	uniqueNameCond, _ := expression.NewBuilder().WithCondition(uniqueName).Build()
@@ -44,8 +44,8 @@ func (m *ModelSvc) CreateModel(awsContext *awsctx.AWSContext, model *Model) erro
 			"name": {
 				S: aws.String(model.Name),
 			},
-			"states": {
-				SS: slice2SS(model.States),
+			"steps": {
+				SS: slice2SS(model.Steps),
 			},
 		},
 		TableName:                aws.String(modelTable),

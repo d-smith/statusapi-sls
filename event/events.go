@@ -12,7 +12,7 @@ import (
 type StatusEvent struct {
 	CorrelationId string `json:"correlation_id"`
 	EventId       string `json:"event_id"`
-	State         string `json:"state"`
+	Step          string `json:"step"`
 }
 
 var (
@@ -40,7 +40,7 @@ func (es *EventSvc) StoreEvent(awsContext *awsctx.AWSContext, event *StatusEvent
 				S: aws.String(event.EventId),
 			},
 			"state": {
-				S: aws.String(event.State),
+				S: aws.String(event.Step),
 			},
 		},
 		TableName: aws.String(instanceTable),

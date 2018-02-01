@@ -17,7 +17,7 @@ var (
 )
 
 func checkInputs(event *event.StatusEvent) error {
-	if event.State == "" || event.CorrelationId == "" || event.EventId == "" {
+	if event.Step == "" || event.CorrelationId == "" || event.EventId == "" {
 		return errors.New("Event payload missing mandatory fields")
 	}
 

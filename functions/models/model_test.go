@@ -43,19 +43,19 @@ func TestModelCreate(t *testing.T) {
 	}{
 		{
 			"handle full request",
-			events.APIGatewayProxyRequest{Body: `{"states": ["Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "model1"}`},
+			events.APIGatewayProxyRequest{Body: `{"steps": ["Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "model1"}`},
 			200,
 			nil,
 		},
 		{
 			"handle existing model",
-			events.APIGatewayProxyRequest{Body: `{"states": ["Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "model1"}`},
+			events.APIGatewayProxyRequest{Body: `{"steps": ["Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "model1"}`},
 			400,
 			nil,
 		},
 		{
-			"handle full request",
-			events.APIGatewayProxyRequest{Body: `{"states":Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "model1"}`},
+			"handle malformed request",
+			events.APIGatewayProxyRequest{Body: `{"steps":Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "x"}`},
 			400,
 			nil,
 		},

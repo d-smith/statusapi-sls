@@ -17,11 +17,11 @@ serverless deploy --aws-profile <profile>
 Example event payload:
 
 ```
-{"correlation_id":"1a","event_id":"1","state":"Order Received"}
+{"correlation_id":"1a","event_id":"1","step":"Order Received"}
 ```
 
 Example model definition:
 
 ```
-{"name":"model1", "states":["s1", "s2", "s3"]}
+{"name":"model1", "steps":["s1", "s2", "s3"]}
 ```

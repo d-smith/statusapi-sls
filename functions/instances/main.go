@@ -25,6 +25,8 @@ func handleGet(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRes
 		id = request.PathParameters["id"]
 	}
 
+	fmt.Println("query params %v", request.QueryStringParameters)
+
 	switch id {
 	case "":
 		return listInstances()

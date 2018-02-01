@@ -27,7 +27,7 @@ func TestEventPost(t *testing.T) {
 	}{
 		{
 			"handle full request",
-			events.APIGatewayProxyRequest{Body: `{"correlation_id":"1a","event_id":"1","state":"Order Received"}`},
+			events.APIGatewayProxyRequest{Body: `{"correlation_id":"1a","event_id":"1","step":"Order Received"}`},
 			200,
 			nil,
 		},
