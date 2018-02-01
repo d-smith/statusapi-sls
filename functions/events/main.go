@@ -9,15 +9,16 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/d-smith/statusapi-sls/awsctx"
+	"github.com/d-smith/statusapi-sls/event"
 )
 
 
 
 var (
-	eventAPI = NewEventSvc()
+	eventAPI = event.NewEventSvc()
 )
 
-func checkInputs(event *StatusEvent) error {
+func checkInputs(event *event.StatusEvent) error {
 	if event.State == "" || event.CorrelationId == "" || event.EventId == "" {
 		return errors.New("Event payload missing mandatory fields")
 	}
@@ -28,7 +29,7 @@ func checkInputs(event *StatusEvent) error {
 func processRequest(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	fmt.Println("Received body: ", request.Body)
 
-	var event StatusEvent
+	var event event.StatusEvent
 
 	err := json.Unmarshal([]byte(request.Body), &event)
 	if err != nil {
