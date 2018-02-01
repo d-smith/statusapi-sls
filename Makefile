@@ -7,4 +7,4 @@ instances:
 	GOOS=linux go build -o bin/instances functions/instances/main.go
 
 events:
-	GOOS=linux go build -o bin/events functions/events/main.go
+	GOOS=linux go build -o bin/events functions/events/*.go
