@@ -2,18 +2,18 @@ package main
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/aws"
-	"os"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"os"
 )
 
 type Model struct {
-	Name string `json:"name"`
+	Name   string   `json:"name"`
 	States []string `json:"states"`
 }
 
-type ModelSvc struct {}
+type ModelSvc struct{}
 
 func NewModel() *ModelSvc {
 	return &ModelSvc{}
@@ -23,7 +23,7 @@ var (
 	modelTable = os.Getenv("MODEL_TABLE")
 )
 
-func slice2SS(strings []string)[]*string {
+func slice2SS(strings []string) []*string {
 	var ss []*string
 	for _, s := range strings {
 		ss = append(ss, aws.String(s))
@@ -47,8 +47,8 @@ func (m *ModelSvc) CreateModel(awsContext *AWSContext, model *Model) error {
 				SS: slice2SS(model.States),
 			},
 		},
-		TableName: aws.String(modelTable),
-		ConditionExpression: uniqueNameCond.Condition(),
+		TableName:                aws.String(modelTable),
+		ConditionExpression:      uniqueNameCond.Condition(),
 		ExpressionAttributeNames: uniqueNameCond.Names(),
 	}
 	_, err := awsContext.ddbSvc.PutItem(input)
