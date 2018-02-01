@@ -8,18 +8,15 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/d-smith/statusapi-sls/awsctx"
+	"github.com/d-smith/statusapi-sls/event"
 )
-
-type AWSContext struct {
-	ddbSvc dynamodbiface.DynamoDBAPI
-}
 
 var (
-	eventAPI = NewEventSvc()
+	eventAPI = event.NewEventSvc()
 )
 
-func checkInputs(event *StatusEvent) error {
+func checkInputs(event *event.StatusEvent) error {
 	if event.State == "" || event.CorrelationId == "" || event.EventId == "" {
 		return errors.New("Event payload missing mandatory fields")
 	}
@@ -27,10 +24,10 @@ func checkInputs(event *StatusEvent) error {
 	return nil
 }
 
-func processRequest(awsContext *AWSContext, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func processRequest(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	fmt.Println("Received body: ", request.Body)
 
-	var event StatusEvent
+	var event event.StatusEvent
 
 	err := json.Unmarshal([]byte(request.Body), &event)
 	if err != nil {
@@ -49,19 +46,19 @@ func processRequest(awsContext *AWSContext, request events.APIGatewayProxyReques
 	return events.APIGatewayProxyResponse{StatusCode: 200}, nil
 }
 
-func makeHandler(awsContext *AWSContext) func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func makeHandler(awsContext *awsctx.AWSContext) func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	return func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 		return processRequest(awsContext, request)
 	}
 }
 
 func main() {
-	var awsContext AWSContext
+	var awsContext awsctx.AWSContext
 
 	sess := session.New()
 	svc := dynamodb.New(sess)
 
-	awsContext.ddbSvc = svc
+	awsContext.DynamoDBSvc = svc
 
 	handler := makeHandler(&awsContext)
 	lambda.Start(handler)

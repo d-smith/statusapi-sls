@@ -1,10 +1,11 @@
-package main
+package model
 
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"github.com/d-smith/statusapi-sls/awsctx"
 	"os"
 )
 
@@ -32,7 +33,7 @@ func slice2SS(strings []string) []*string {
 	return ss
 }
 
-func (m *ModelSvc) CreateModel(awsContext *AWSContext, model *Model) error {
+func (m *ModelSvc) CreateModel(awsContext *awsctx.AWSContext, model *Model) error {
 	fmt.Printf("Creating model %s with states %v", model.Name, model.States)
 
 	uniqueName := expression.AttributeNotExists(expression.Name("name"))
@@ -51,7 +52,7 @@ func (m *ModelSvc) CreateModel(awsContext *AWSContext, model *Model) error {
 		ConditionExpression:      uniqueNameCond.Condition(),
 		ExpressionAttributeNames: uniqueNameCond.Names(),
 	}
-	_, err := awsContext.ddbSvc.PutItem(input)
+	_, err := awsContext.DynamoDBSvc.PutItem(input)
 
 	return err
 }

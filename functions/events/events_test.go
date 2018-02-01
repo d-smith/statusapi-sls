@@ -4,6 +4,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/d-smith/statusapi-sls/awsctx"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -38,9 +39,9 @@ func TestEventPost(t *testing.T) {
 		},
 	}
 
-	var awsContext AWSContext
+	var awsContext awsctx.AWSContext
 	var myMock dynamoDBMockery
-	awsContext.ddbSvc = &myMock
+	awsContext.DynamoDBSvc = &myMock
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
