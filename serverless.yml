@@ -82,6 +82,10 @@ functions:
       - http:
           path: instances/{id}
           method: get
+          request:
+            parameters:
+              querystrings:
+                model: true
   statusevents:
     handler: bin/events
     events:
