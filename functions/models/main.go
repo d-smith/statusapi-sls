@@ -11,12 +11,13 @@ import (
 	"net/http"
 	"strings"
 	"github.com/d-smith/statusapi-sls/awsctx"
+	"github.com/d-smith/statusapi-sls/model"
 )
 
 
 
 var (
-	modelAPI = NewModel()
+	modelAPI = model.NewModel()
 )
 
 func listModels() (events.APIGatewayProxyResponse, error) {
@@ -46,7 +47,7 @@ func handleGet(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequ
 }
 
 func handlePost(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	var model Model
+	var model model.Model
 	err := json.Unmarshal([]byte(request.Body), &model)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
