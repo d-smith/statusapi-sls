@@ -1,20 +1,19 @@
 package main
 
 import (
-    "fmt"
-    "github.com/aws/aws-lambda-go/events"
+	"fmt"
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"strings"
 	"net/http"
+	"strings"
 )
-
 
 func listInstances() (events.APIGatewayProxyResponse, error) {
 	fmt.Println("list instances\n")
 	return events.APIGatewayProxyResponse{Body: "other\n", StatusCode: http.StatusOK}, nil
 }
 
-func getInstance(id string)(events.APIGatewayProxyResponse, error) {
+func getInstance(id string) (events.APIGatewayProxyResponse, error) {
 	fmt.Println("get instance\n")
 	return events.APIGatewayProxyResponse{Body: "other\n", StatusCode: http.StatusOK}, nil
 }
@@ -34,8 +33,6 @@ func handleGet(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRes
 	}
 
 }
-
-
 
 func handleOtherRequests(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	return events.APIGatewayProxyResponse{Body: "other\n", StatusCode: http.StatusNotImplemented}, nil

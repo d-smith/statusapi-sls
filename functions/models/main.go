@@ -8,13 +8,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"net/http"
-	"strings"
 	"github.com/d-smith/statusapi-sls/awsctx"
 	"github.com/d-smith/statusapi-sls/model"
+	"net/http"
+	"strings"
 )
-
-
 
 var (
 	modelAPI = model.NewModel()

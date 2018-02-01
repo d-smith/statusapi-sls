@@ -5,8 +5,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
-	"os"
 	"github.com/d-smith/statusapi-sls/awsctx"
+	"os"
 )
 
 type Model struct {

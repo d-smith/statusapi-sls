@@ -12,8 +12,6 @@ import (
 	"github.com/d-smith/statusapi-sls/event"
 )
 
-
-
 var (
 	eventAPI = event.NewEventSvc()
 )

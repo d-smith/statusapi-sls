@@ -6,9 +6,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/d-smith/statusapi-sls/awsctx"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"github.com/d-smith/statusapi-sls/awsctx"
 )
 
 type dynamoDBMockery struct {

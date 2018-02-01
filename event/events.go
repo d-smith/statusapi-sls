@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/d-smith/statusapi-sls/awsctx"
 	"os"
 	"time"
-	"github.com/d-smith/statusapi-sls/awsctx"
 )
 
 type StatusEvent struct {
