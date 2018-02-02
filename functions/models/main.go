@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	modelAPI = model.NewModel()
+	modelAPI = model.NewModelSvc()
 )
 
 func listModels() (events.APIGatewayProxyResponse, error) {

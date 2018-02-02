@@ -17,8 +17,14 @@ var (
 )
 
 func checkInputs(event *event.StatusEvent) error {
-	if event.State == "" || event.CorrelationId == "" || event.EventId == "" {
+	step_state := event.StepState
+
+	if event.Step == "" || event.TransactionId == "" || event.EventId == "" || step_state == ""{
 		return errors.New("Event payload missing mandatory fields")
+	}
+
+	if step_state != "active" && step_state != "completed" {
+		return errors.New("Invalid step state")
 	}
 
 	return nil

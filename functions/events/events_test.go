@@ -27,8 +27,20 @@ func TestEventPost(t *testing.T) {
 	}{
 		{
 			"handle full request",
-			events.APIGatewayProxyRequest{Body: `{"correlation_id":"1a","event_id":"1","state":"Order Received"}`},
+			events.APIGatewayProxyRequest{Body: `{"txn_id":"1a","event_id":"1","step":"Order Received","step_state":"active"}`},
 			200,
+			nil,
+		},
+		{
+			"valid step state - completed",
+			events.APIGatewayProxyRequest{Body: `{"txn_id":"1a","event_id":"1","step":"Order Received","step_state":"completed"}`},
+			200,
+			nil,
+		},
+		{
+			"invalid step state",
+			events.APIGatewayProxyRequest{Body: `{"txn_id":"1a","event_id":"1","step":"Order Received","step_state":"dunno"}`},
+			400,
 			nil,
 		},
 		{

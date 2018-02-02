@@ -10,13 +10,13 @@ import (
 )
 
 type Model struct {
-	Name   string   `json:"name"`
-	States []string `json:"states"`
+	Name  string   `json:"name"`
+	Steps []string `json:"steps"`
 }
 
 type ModelSvc struct{}
 
-func NewModel() *ModelSvc {
+func NewModelSvc() *ModelSvc {
 	return &ModelSvc{}
 }
 
@@ -33,8 +33,38 @@ func slice2SS(strings []string) []*string {
 	return ss
 }
 
+func ss2slice(ss []*string) []string {
+	var outSlice []string
+	for _, s := range ss {
+		outSlice = append(outSlice, *s)
+	}
+
+	return outSlice
+}
+
+func (m *ModelSvc) GetStepsForModel(awsContext *awsctx.AWSContext, modelName string) ([]string, error){
+	input := &dynamodb.GetItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"name": {
+				S: aws.String(modelName),
+			},
+
+		},
+		TableName: aws.String(modelTable),
+	}
+
+	result, err := awsContext.DynamoDBSvc.GetItem(input)
+	if err != nil {
+		return nil, err
+	}
+
+	steps := result.Item["steps"].SS
+
+	return ss2slice(steps), nil
+}
+
 func (m *ModelSvc) CreateModel(awsContext *awsctx.AWSContext, model *Model) error {
-	fmt.Printf("Creating model %s with states %v", model.Name, model.States)
+	fmt.Printf("Creating model %s with steps %v", model.Name, model.Steps)
 
 	uniqueName := expression.AttributeNotExists(expression.Name("name"))
 	uniqueNameCond, _ := expression.NewBuilder().WithCondition(uniqueName).Build()
@@ -44,8 +74,8 @@ func (m *ModelSvc) CreateModel(awsContext *awsctx.AWSContext, model *Model) erro
 			"name": {
 				S: aws.String(model.Name),
 			},
-			"states": {
-				SS: slice2SS(model.States),
+			"steps": {
+				SS: slice2SS(model.Steps),
 			},
 		},
 		TableName:                aws.String(modelTable),

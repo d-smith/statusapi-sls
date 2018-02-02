@@ -150,14 +150,14 @@ resources:
       Properties:
         AttributeDefinitions:
           -
-            AttributeName: correlationId
+            AttributeName: transactionId
             AttributeType: S
           -
             AttributeName: eventTimestamp
             AttributeType: N
         KeySchema:
           -
-            AttributeName: correlationId
+            AttributeName: transactionId
             KeyType: HASH
           -
             AttributeName: eventTimestamp
