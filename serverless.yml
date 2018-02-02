@@ -82,10 +82,6 @@ functions:
       - http:
           path: instances/{id}
           method: get
-          request:
-            parameters:
-              querystrings:
-                model: true
   statusevents:
     handler: bin/events
     events:
@@ -154,14 +150,14 @@ resources:
       Properties:
         AttributeDefinitions:
           -
-            AttributeName: correlationId
+            AttributeName: transactionId
             AttributeType: S
           -
             AttributeName: eventTimestamp
             AttributeType: N
         KeySchema:
           -
-            AttributeName: correlationId
+            AttributeName: transactionId
             KeyType: HASH
           -
             AttributeName: eventTimestamp

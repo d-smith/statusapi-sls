@@ -6,6 +6,16 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"net/http"
 	"strings"
+	"github.com/d-smith/statusapi-sls/instance"
+	"encoding/json"
+	"github.com/d-smith/statusapi-sls/awsctx"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"log"
+)
+
+var (
+	instanceSvc = instance.NewInstanceSvc()
 )
 
 func listInstances() (events.APIGatewayProxyResponse, error) {
@@ -13,25 +23,45 @@ func listInstances() (events.APIGatewayProxyResponse, error) {
 	return events.APIGatewayProxyResponse{Body: "other\n", StatusCode: http.StatusOK}, nil
 }
 
-func getInstance(id string) (events.APIGatewayProxyResponse, error) {
+func getModelStates(awsContext *awsctx.AWSContext, id, model string) (events.APIGatewayProxyResponse, error) {
+	log.Println("get model states")
+	states, err :=  instanceSvc.StatusForInstance(awsContext, id, model)
+	if err != nil {
+		fmt.Println("Error building model states", err.Error())
+		return events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}, nil
+	}
+
+	bodyOut, err := json.Marshal(&states)
+	if err != nil {
+		fmt.Println("Error marshalling response", err.Error())
+		return events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}, nil
+	}
+
+	return events.APIGatewayProxyResponse{Body: string(bodyOut), StatusCode: http.StatusOK}, nil
+}
+
+func getInstance(awsContext *awsctx.AWSContext, id string, queryStringParams map[string]string) (events.APIGatewayProxyResponse, error) {
 	fmt.Println("get instance\n")
+	model := queryStringParams["model"]
+	if model != "" {
+		return getModelStates(awsContext, id, model)
+	}
+
 	return events.APIGatewayProxyResponse{Body: "other\n", StatusCode: http.StatusOK}, nil
 }
 
-func handleGet(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func handleGet(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	//Is there an id from the path?
 	var id string
 	if len(request.PathParameters) > 0 {
 		id = request.PathParameters["id"]
 	}
 
-	fmt.Println("query params %v", request.QueryStringParameters)
-
 	switch id {
 	case "":
 		return listInstances()
 	default:
-		return getInstance(id)
+		return getInstance(awsContext, id, request.QueryStringParameters)
 	}
 
 }
@@ -39,24 +69,34 @@ func handleGet(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRes
 func handleOtherRequests(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	return events.APIGatewayProxyResponse{Body: "other\n", StatusCode: http.StatusNotImplemented}, nil
 }
+func makeHandler(awsContext *awsctx.AWSContext) func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	return func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+		fmt.Println("Received body: ", request.Body)
 
-func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	fmt.Println("Received body: ", request.Body)
+		var response events.APIGatewayProxyResponse
+		var err error
 
-	var response events.APIGatewayProxyResponse
-	var err error
+		method := strings.ToLower(request.HTTPMethod)
+		switch method {
+		case "get":
+			response, err = handleGet(awsContext, request)
+		default:
+			response, err = handleOtherRequests(request)
+		}
 
-	method := strings.ToLower(request.HTTPMethod)
-	switch method {
-	case "get":
-		response, err = handleGet(request)
-	default:
-		response, err = handleOtherRequests(request)
+		return response, err
 	}
-
-	return response, err
 }
 
 func main() {
-	lambda.Start(Handler)
+	var awsContext awsctx.AWSContext
+
+	sess := session.New()
+	svc := dynamodb.New(sess)
+
+	awsContext.DynamoDBSvc = svc
+
+	handler := makeHandler(&awsContext)
+
+	lambda.Start(handler)
 }

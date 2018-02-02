@@ -16,7 +16,7 @@ type Model struct {
 
 type ModelSvc struct{}
 
-func NewModel() *ModelSvc {
+func NewModelSvc() *ModelSvc {
 	return &ModelSvc{}
 }
 
@@ -31,6 +31,36 @@ func slice2SS(strings []string) []*string {
 	}
 
 	return ss
+}
+
+func ss2slice(ss []*string) []string {
+	var outSlice []string
+	for _, s := range ss {
+		outSlice = append(outSlice, *s)
+	}
+
+	return outSlice
+}
+
+func (m *ModelSvc) GetStepsForModel(awsContext *awsctx.AWSContext, modelName string) ([]string, error){
+	input := &dynamodb.GetItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"name": {
+				S: aws.String(modelName),
+			},
+
+		},
+		TableName: aws.String(modelTable),
+	}
+
+	result, err := awsContext.DynamoDBSvc.GetItem(input)
+	if err != nil {
+		return nil, err
+	}
+
+	steps := result.Item["steps"].SS
+
+	return ss2slice(steps), nil
 }
 
 func (m *ModelSvc) CreateModel(awsContext *awsctx.AWSContext, model *Model) error {

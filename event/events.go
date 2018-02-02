@@ -10,9 +10,10 @@ import (
 )
 
 type StatusEvent struct {
-	CorrelationId string `json:"correlation_id"`
+	TransactionId string `json:"txn_id"`
 	EventId       string `json:"event_id"`
 	Step          string `json:"step"`
+	StepState     string `json:"step_state"`
 }
 
 var (
@@ -25,13 +26,59 @@ func NewEventSvc() *EventSvc {
 	return &EventSvc{}
 }
 
+func (es *EventSvc) GetStatusEventsForTxn(awsContext *awsctx.AWSContext, txnId string) (map[string]StatusEvent,map[string]StatusEvent, error) {
+	input := &dynamodb.QueryInput{
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":iid": {
+				S: aws.String(txnId),
+			},
+		},
+		KeyConditionExpression: aws.String("transactionId = :iid"),
+		TableName:              aws.String(instanceTable),
+	}
+
+	qout, err := awsContext.DynamoDBSvc.Query(input)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	activeEvents := make(map[string]StatusEvent)
+	completedEvents := make(map[string]StatusEvent)
+
+	items := qout.Items
+	for _, item := range items {
+
+		step := *item["step"].S
+		stepState := *item["step_state"].S
+
+		event := StatusEvent{
+			TransactionId: txnId,
+			EventId: *item["eventId"].S,
+			Step: step,
+			StepState: stepState,
+		}
+
+		switch stepState {
+		case "active":
+			activeEvents[step] = event
+		case "completed":
+			completedEvents[step] = event
+		default:
+			fmt.Println("Warning: unrecognized step state", stepState)
+		}
+	}
+
+	return activeEvents, completedEvents, nil
+
+}
+
 func (es *EventSvc) StoreEvent(awsContext *awsctx.AWSContext, event *StatusEvent) error {
 	now := time.Now()
 	timestampMillis := now.UnixNano() / 1000000
 	input := &dynamodb.PutItemInput{
 		Item: map[string]*dynamodb.AttributeValue{
-			"correlationId": {
-				S: aws.String(event.CorrelationId),
+			"transactionId": {
+				S: aws.String(event.TransactionId),
 			},
 			"eventTimestamp": {
 				N: aws.String(fmt.Sprintf("%d", timestampMillis)),
@@ -39,8 +86,11 @@ func (es *EventSvc) StoreEvent(awsContext *awsctx.AWSContext, event *StatusEvent
 			"eventId": {
 				S: aws.String(event.EventId),
 			},
-			"state": {
+			"step": {
 				S: aws.String(event.Step),
+			},
+			"step_state": {
+				S: aws.String(event.StepState),
 			},
 		},
 		TableName: aws.String(instanceTable),
