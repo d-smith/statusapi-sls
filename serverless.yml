@@ -62,31 +62,31 @@ functions:
     handler: bin/models
     events:
       - http:
-          path: models/{name}
+          path: status/api/v1/models/{name}
           method: get
       - http:
-          path: models/{name}
+          path: status/api/v1/models/{name}
           method: put
       - http:
-          path: models
+          path: status/api/v1/models
           method: get
       - http:
-          path: models
+          path: status/api/v1/models
           method: post
   instances:
     handler: bin/instances
     events:
       - http:
-          path: instances
+          path: status/api/v1/instances
           method: get
       - http:
-          path: instances/{id}
+          path: status/api/v1/instances/{id}
           method: get
   statusevents:
     handler: bin/events
     events:
       - http:
-          path: events
+          path: status/api/v1/events
           method: post
 
 

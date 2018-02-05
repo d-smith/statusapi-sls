@@ -30,12 +30,12 @@ Simple scenario - define a model, post some events, retrieve view
 of model based on instance state
 
 ```
-curl -H "x-api-key: XXXX" -XPOST -d '{"name":"model1", "steps":["s1", "s2", "s3"]}' https://ENDPOINT/dev/models
+curl -H "x-api-key: XXXX" -XPOST -d '{"name":"model1", "steps":["s1", "s2", "s3"]}' https://ENDPOINT/dev/status/api/v1/models
 
-curl -H "x-api-key: XXXX" -XPOST -d '{"txn_id":"1a","event_id":"1","step":"s1","step_state":"completed"}' https://ENDPOINT/dev/events
+curl -H "x-api-key: XXXX" -XPOST -d '{"txn_id":"1a","event_id":"1","step":"s1","step_state":"completed"}' https://ENDPOINT/dev/status/api/v1/events
 
-curl -H "x-api-key: XXXX" -XPOST -d '{"txn_id":"1a","event_id":"2","step":"s2","step_state":"completed"}' https://ENDPOINT/dev/events
+curl -H "x-api-key: XXXX" -XPOST -d '{"txn_id":"1a","event_id":"2","step":"s2","step_state":"completed"}' https://ENDPOINT/dev/status/api/v1/events
  
-curl -H "x-api-key: XXXX"  'https://ENDPOINT/dev/instances/1a?model=model1'
+curl -H "x-api-key: XXXX"  'https://ENDPOINT/dev/status/api/v1/instances/1a?model=model1'
 ```
 
