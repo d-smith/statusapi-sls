@@ -26,7 +26,7 @@ func NewEventSvc() *EventSvc {
 	return &EventSvc{}
 }
 
-func (es *EventSvc) GetStatusEventsForTxn(awsContext *awsctx.AWSContext, txnId string) (map[string]StatusEvent,map[string]StatusEvent, error) {
+func (es *EventSvc) GetStatusEventsForTxn(awsContext *awsctx.AWSContext, txnId string) (map[string]StatusEvent, map[string]StatusEvent, error) {
 	input := &dynamodb.QueryInput{
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":iid": {
@@ -53,9 +53,9 @@ func (es *EventSvc) GetStatusEventsForTxn(awsContext *awsctx.AWSContext, txnId s
 
 		event := StatusEvent{
 			TransactionId: txnId,
-			EventId: *item["eventId"].S,
-			Step: step,
-			StepState: stepState,
+			EventId:       *item["eventId"].S,
+			Step:          step,
+			StepState:     stepState,
 		}
 
 		switch stepState {

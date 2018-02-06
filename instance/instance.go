@@ -1,21 +1,21 @@
 package instance
 
 import (
-	"github.com/d-smith/statusapi-sls/awsctx"
-	"github.com/d-smith/statusapi-sls/model"
-	"github.com/d-smith/statusapi-sls/event"
-	"log"
 	"fmt"
+	"github.com/d-smith/statusapi-sls/awsctx"
+	"github.com/d-smith/statusapi-sls/event"
+	"github.com/d-smith/statusapi-sls/model"
+	"log"
 )
 
-type InstanceSvc struct {}
+type InstanceSvc struct{}
 
 func NewInstanceSvc() *InstanceSvc {
 	return &InstanceSvc{}
 }
 
 type StepState struct {
-	Step string `json:"step"`
+	Step      string `json:"step"`
 	StepState string `json:"step_state`
 }
 
@@ -24,13 +24,11 @@ var (
 	eventSvc = event.NewEventSvc()
 )
 
-
-
 func (is *InstanceSvc) StatusForInstance(awsContext *awsctx.AWSContext, transactionId, modelName string) ([]StepState, error) {
 	log.Println("get status events for txn")
 	active, completed, err := eventSvc.GetStatusEventsForTxn(awsContext, transactionId)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	log.Printf("active: %v\n", active)
@@ -39,7 +37,7 @@ func (is *InstanceSvc) StatusForInstance(awsContext *awsctx.AWSContext, transact
 	log.Println("get steps events for model", modelName)
 	steps, err := modelSvc.GetStepsForModel(awsContext, modelName)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	log.Println("join events and model states")
@@ -57,13 +55,13 @@ func (is *InstanceSvc) StatusForInstance(awsContext *awsctx.AWSContext, transact
 		if ok {
 			log.Println("found step with state ", event.StepState)
 			modelStates = append(modelStates, StepState{
-				Step: event.Step,
+				Step:      event.Step,
 				StepState: event.StepState,
 			})
 		} else {
 			log.Println("no step state found")
 			modelStates = append(modelStates, StepState{
-				Step: step,
+				Step:      step,
 				StepState: "",
 			})
 		}

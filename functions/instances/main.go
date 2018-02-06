@@ -1,17 +1,17 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"net/http"
-	"strings"
-	"github.com/d-smith/statusapi-sls/instance"
-	"encoding/json"
-	"github.com/d-smith/statusapi-sls/awsctx"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/d-smith/statusapi-sls/awsctx"
+	"github.com/d-smith/statusapi-sls/instance"
 	"log"
+	"net/http"
+	"strings"
 )
 
 var (
@@ -25,7 +25,7 @@ func listInstances() (events.APIGatewayProxyResponse, error) {
 
 func getModelStates(awsContext *awsctx.AWSContext, id, model string) (events.APIGatewayProxyResponse, error) {
 	log.Println("get model states")
-	states, err :=  instanceSvc.StatusForInstance(awsContext, id, model)
+	states, err := instanceSvc.StatusForInstance(awsContext, id, model)
 	if err != nil {
 		fmt.Println("Error building model states", err.Error())
 		return events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}, nil

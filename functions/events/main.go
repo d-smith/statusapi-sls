@@ -19,7 +19,7 @@ var (
 func checkInputs(event *event.StatusEvent) error {
 	step_state := event.StepState
 
-	if event.Step == "" || event.TransactionId == "" || event.EventId == "" || step_state == ""{
+	if event.Step == "" || event.TransactionId == "" || event.EventId == "" || step_state == "" {
 		return errors.New("Event payload missing mandatory fields")
 	}
 

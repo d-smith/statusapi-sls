@@ -42,13 +42,12 @@ func ss2slice(ss []*string) []string {
 	return outSlice
 }
 
-func (m *ModelSvc) GetStepsForModel(awsContext *awsctx.AWSContext, modelName string) ([]string, error){
+func (m *ModelSvc) GetStepsForModel(awsContext *awsctx.AWSContext, modelName string) ([]string, error) {
 	input := &dynamodb.GetItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
 			"name": {
 				S: aws.String(modelName),
 			},
-
 		},
 		TableName: aws.String(modelTable),
 	}
