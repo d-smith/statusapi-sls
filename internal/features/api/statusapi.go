@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"encoding/json"
 )
 
 func postEventsForModel(apiKey, apiEndpoint string) (string, error) {
@@ -117,8 +118,32 @@ func init() {
 	})
 
 	Then(`^the state of the model reflects the events$`, func() {
+
+		type ModelState struct {
+			Step string `json:"step"`
+			State string `json:"step_state"`
+		}
+
 		//T.Skip() // pending
 		log.Println(modelState)
+
+		var states []ModelState
+		err := json.Unmarshal([]byte(modelState), &states)
+		if !assert.Nil(T, err) {
+			log.Printf("error parsing response: %s", err.Error())
+			return
+		}
+
+		assert.Equal(T, 3, len(states), "Unexpected number of states parsed from response")
+		stateMap := make(map[string]string)
+		for _,s := range states {
+			stateMap[s.Step] = s.State
+		}
+		
+		assert.Equal(T, "completed", stateMap["s1"])
+		assert.Equal(T, "completed", stateMap["s2"])
+		assert.Equal(T, "", stateMap["s3"])
+
 	})
 
 }

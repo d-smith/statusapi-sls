@@ -16,7 +16,7 @@ func NewInstanceSvc() *InstanceSvc {
 
 type StepState struct {
 	Step      string `json:"step"`
-	StepState string `json:"step_state`
+	StepState string `json:"step_state"`
 }
 
 var (
