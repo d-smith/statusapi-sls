@@ -6,6 +6,7 @@ import (
 	"fmt"
 	. "github.com/gucumber/gucumber"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 	"time"
 )
 
-func postEventsForModel(apiKey, apiEndpoint string) error {
+func postEventsForModel(apiKey, apiEndpoint string) (string, error) {
 	eventPostEndpoint := fmt.Sprintf("https://%s/dev/status/api/v1/events", apiEndpoint)
 	log.Println("send to", eventPostEndpoint)
 	txnId := fmt.Sprintf("txn-%d", rand.Int())
@@ -23,7 +24,7 @@ func postEventsForModel(apiKey, apiEndpoint string) error {
 
 		req, err := http.NewRequest("POST", eventPostEndpoint, bytes.NewBuffer([]byte(payload)))
 		if !assert.Nil(T, err) {
-			return err
+			return "", err
 		}
 		req.Header.Add("x-api-key", apiKey)
 
@@ -32,15 +33,15 @@ func postEventsForModel(apiKey, apiEndpoint string) error {
 		resp, err := client.Do(req)
 		if !assert.Nil(T, err) {
 			log.Printf("error on event request: %s", err.Error())
-			return err
+			return "", err
 		}
 
 		if !assert.Equal(T, http.StatusOK, resp.StatusCode) {
-			return errors.New(fmt.Sprintf("Unexcepted status code %d", resp.StatusCode))
+			return "", errors.New(fmt.Sprintf("Unexcepted status code %d", resp.StatusCode))
 		}
 	}
 
-	return nil
+	return txnId, nil
 }
 
 func init() {
@@ -50,10 +51,11 @@ func init() {
 		apiKey      = os.Getenv("APIKEY")
 		apiEndpoint = os.Getenv("API_ENDPOINT")
 		testBase    = fmt.Sprintf("x%d", rand.Int())
+		txnId       = ""
+		modelState  = ""
 	)
 
 	Given(`^a milestone model$`, func() {
-		//curl -H "x-api-key: XXXX" -XPOST -d '{"name":"model1", "steps":["s1", "s2", "s3"]}' https://ENDPOINT/dev/status/api/v1/models
 		modelPostUrl := fmt.Sprintf("https://%s/dev/status/api/v1/models", apiEndpoint)
 		log.Printf("request with api key %s going to %s", apiKey, modelPostUrl)
 		payload := fmt.Sprintf(`{"name":"model%s", "steps":["s1", "s2", "s3"]}`, testBase)
@@ -78,16 +80,45 @@ func init() {
 	})
 
 	And(`^some correlated events for the model$`, func() {
-		//curl -H "x-api-key: XXXX" -XPOST -d '{"txn_id":"1a","event_id":"1","step":"s1","step_state":"completed"}' https://ENDPOINT/dev/status/api/v1/events
-		postEventsForModel(apiKey, apiEndpoint)
+		var err error
+		txnId, err = postEventsForModel(apiKey, apiEndpoint)
+		if !assert.Nil(T, err) {
+			log.Printf("error on posting events: %s", err.Error())
+			return
+		}
 	})
 
 	When(`^I retrieve the model state for the correlated events$`, func() {
-		//T.Skip() // pending
+		//curl -H "x-api-key: XXXX"  'https://ENDPOINT/dev/status/api/v1/instances/1a?model=model1'
+		requestUrl := fmt.Sprintf("https://%s/dev/status/api/v1/instances/%s?model=model%s", apiEndpoint, txnId, testBase)
+		log.Println("get", requestUrl)
+
+		req, err := http.NewRequest("GET", requestUrl, nil)
+		if !assert.Nil(T, err) {
+			return
+		}
+		req.Header.Add("x-api-key", apiKey)
+
+		client := &http.Client{}
+		log.Println("make test request")
+		resp, err := client.Do(req)
+		if !assert.Nil(T, err) {
+			log.Printf("error on test request: %s", err.Error())
+			return
+		}
+
+		if !assert.Equal(T, http.StatusOK, resp.StatusCode) {
+			return
+		}
+
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		modelState = string(body)
 	})
 
 	Then(`^the state of the model reflects the events$`, func() {
 		//T.Skip() // pending
+		log.Println(modelState)
 	})
 
 }
