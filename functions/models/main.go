@@ -18,9 +18,17 @@ var (
 	modelAPI = model.NewModelSvc()
 )
 
-func listModels() (events.APIGatewayProxyResponse, error) {
+func listModels(awsContext *awsctx.AWSContext) (events.APIGatewayProxyResponse, error) {
 	fmt.Println("listModels")
-	return events.APIGatewayProxyResponse{Body: "models get\n", StatusCode: 200}, nil
+	models, err := modelAPI.ListModels(awsContext)
+	if err != nil {
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}, nil
+	}
+
+	modelsOut, _ := json.Marshal(&models)
+
+	return events.APIGatewayProxyResponse{Body: string(modelsOut), StatusCode: http.StatusOK}, nil
+
 }
 
 func getModel(name string) (events.APIGatewayProxyResponse, error) {
@@ -37,7 +45,7 @@ func handleGet(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequ
 
 	switch name {
 	case "":
-		return listModels()
+		return listModels(awsContext)
 	default:
 		return getModel(name)
 	}

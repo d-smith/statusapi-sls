@@ -42,6 +42,33 @@ func ss2slice(ss []*string) []string {
 	return outSlice
 }
 
+func (m *ModelSvc) ListModels(awsContext *awsctx.AWSContext)([]string, error) {
+
+	proj := expression.NamesList(expression.Name("name"))
+	expr, err := expression.NewBuilder().WithProjection(proj).Build()
+	if err != nil {
+		fmt.Println(nil, err)
+	}
+
+	input := &dynamodb.ScanInput{
+		ExpressionAttributeNames: expr.Names(),
+		ProjectionExpression: expr.Projection(),
+		TableName: aws.String(modelTable),
+	}
+
+	result, err := awsContext.DynamoDBSvc.Scan(input)
+	if err != nil {
+		return nil, err
+	}
+
+	var models []string
+	for _, item := range result.Items {
+		models = append(models, *item["name"].S)
+	}
+
+	return models, nil
+}
+
 func (m *ModelSvc) GetStepsForModel(awsContext *awsctx.AWSContext, modelName string) ([]string, error) {
 	input := &dynamodb.GetItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
