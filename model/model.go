@@ -42,7 +42,7 @@ func ss2slice(ss []*string) []string {
 	return outSlice
 }
 
-func (m *ModelSvc) ListModels(awsContext *awsctx.AWSContext)([]string, error) {
+func (m *ModelSvc) ListModels(awsContext *awsctx.AWSContext) ([]string, error) {
 
 	proj := expression.NamesList(expression.Name("name"))
 	expr, err := expression.NewBuilder().WithProjection(proj).Build()
@@ -52,8 +52,8 @@ func (m *ModelSvc) ListModels(awsContext *awsctx.AWSContext)([]string, error) {
 
 	input := &dynamodb.ScanInput{
 		ExpressionAttributeNames: expr.Names(),
-		ProjectionExpression: expr.Projection(),
-		TableName: aws.String(modelTable),
+		ProjectionExpression:     expr.Projection(),
+		TableName:                aws.String(modelTable),
 	}
 
 	result, err := awsContext.DynamoDBSvc.Scan(input)
@@ -61,7 +61,7 @@ func (m *ModelSvc) ListModels(awsContext *awsctx.AWSContext)([]string, error) {
 		return nil, err
 	}
 
-	var models []string
+	var models = []string{}
 	for _, item := range result.Items {
 		models = append(models, *item["name"].S)
 	}

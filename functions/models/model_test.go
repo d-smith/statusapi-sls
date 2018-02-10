@@ -13,7 +13,8 @@ import (
 
 type dynamoDBMockery struct {
 	dynamodbiface.DynamoDBAPI
-	names map[string]string
+	names      map[string]string
+	scanresult *dynamodb.ScanOutput
 }
 
 func (m *dynamoDBMockery) PutItem(item *dynamodb.PutItemInput) (*dynamodb.PutItemOutput, error) {
@@ -32,6 +33,14 @@ func (m *dynamoDBMockery) PutItem(item *dynamodb.PutItemInput) (*dynamodb.PutIte
 	}
 	var out dynamodb.PutItemOutput
 	return &out, err
+}
+
+func (m *dynamoDBMockery) Scan(input *dynamodb.ScanInput) (*dynamodb.ScanOutput, error) {
+	scanResult := m.scanresult
+	if scanResult == nil {
+		scanResult = &dynamodb.ScanOutput{}
+	}
+	return scanResult, nil
 }
 
 func TestModelCreate(t *testing.T) {
@@ -70,6 +79,38 @@ func TestModelCreate(t *testing.T) {
 			response, err := handlePost(&awsContext, test.request)
 			assert.IsType(t, test.err, err)
 			assert.Equal(t, test.expect, response.StatusCode)
+		})
+
+	}
+}
+
+func TestModelList(t *testing.T) {
+	tests := []struct {
+		name    string
+		request events.APIGatewayProxyRequest
+		expect  int
+		payload string
+		err     error
+	}{
+		{
+			"no results",
+			events.APIGatewayProxyRequest{},
+			200,
+			"[]",
+			nil,
+		},
+	}
+
+	var awsContext awsctx.AWSContext
+	var myMock dynamoDBMockery
+	awsContext.DynamoDBSvc = &myMock
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response, err := handleGet(&awsContext, test.request)
+			assert.IsType(t, test.err, err)
+			assert.Equal(t, test.expect, response.StatusCode)
+			assert.Equal(t, test.payload, response.Body)
 		})
 
 	}
