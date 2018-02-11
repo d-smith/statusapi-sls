@@ -9,6 +9,9 @@ import (
 	"github.com/d-smith/statusapi-sls/awsctx"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"github.com/aws/aws-sdk-go/aws"
+	"encoding/json"
+	"log"
 )
 
 type dynamoDBMockery struct {
@@ -84,19 +87,40 @@ func TestModelCreate(t *testing.T) {
 	}
 }
 
+func makeOutputWithModelName(names... string)*dynamodb.ScanOutput {
+	scanOutput := &dynamodb.ScanOutput{}
+	for _, name := range names {
+		itemdata := make(map[string]*dynamodb.AttributeValue)
+		itemdata["name"] = &dynamodb.AttributeValue{S:aws.String(name)}
+		scanOutput.Items = append(scanOutput.Items, itemdata)
+	}
+
+	return scanOutput
+}
+
 func TestModelList(t *testing.T) {
 	tests := []struct {
 		name    string
 		request events.APIGatewayProxyRequest
+		scanResult *dynamodb.ScanOutput
 		expect  int
-		payload string
+		payload []string
 		err     error
 	}{
 		{
 			"no results",
 			events.APIGatewayProxyRequest{},
+			&dynamodb.ScanOutput{},
 			200,
-			"[]",
+			nil,
+			nil,
+		},
+		{
+			"one results",
+			events.APIGatewayProxyRequest{},
+			makeOutputWithModelName("model1"),
+			200,
+			[]string{"model1"},
 			nil,
 		},
 	}
@@ -106,12 +130,35 @@ func TestModelList(t *testing.T) {
 	awsContext.DynamoDBSvc = &myMock
 
 	for _, test := range tests {
+		myMock.scanresult = test.scanResult
 		t.Run(test.name, func(t *testing.T) {
 			response, err := handleGet(&awsContext, test.request)
+
 			assert.IsType(t, test.err, err)
 			assert.Equal(t, test.expect, response.StatusCode)
-			assert.Equal(t, test.payload, response.Body)
+
+			var output []string
+			err = json.Unmarshal([]byte(response.Body),&output)
+			if assert.Nil(t,err) {
+				assert.True(t, samePayload(test.payload, output))
+			}
 		})
 
 	}
+}
+
+func samePayload(p1, p2 []string) bool {
+	if len(p1) != len(p2) {
+		log.Printf("---> Lengths of payloads differ: %v vs %v\n", p1, p2)
+		return false
+	}
+
+	for i, v1 := range p1 {
+		if v1 != p2[i] {
+			log.Printf("---> slice content differs: %s vs %s\n", v1, p2[i])
+			return false
+		}
+	}
+
+	return true
 }
