@@ -123,6 +123,14 @@ func TestModelList(t *testing.T) {
 			[]string{"model1"},
 			nil,
 		},
+		{
+			"two results",
+			events.APIGatewayProxyRequest{},
+			makeOutputWithModelName("model1", "model2"),
+			200,
+			[]string{"model1","model2"},
+			nil,
+		},
 	}
 
 	var awsContext awsctx.AWSContext
