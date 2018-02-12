@@ -31,9 +31,25 @@ func listModels(awsContext *awsctx.AWSContext) (events.APIGatewayProxyResponse, 
 
 }
 
-func getModel(name string) (events.APIGatewayProxyResponse, error) {
+func getModel(awsContext *awsctx.AWSContext, name string) (events.APIGatewayProxyResponse, error) {
 	fmt.Println("getModel", name)
-	return events.APIGatewayProxyResponse{Body: "models get\n", StatusCode: 200}, nil
+	model, err := modelAPI.GetModel(awsContext, name)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			if aerr.Code() == dynamodb.ErrCodeResourceNotFoundException {
+				return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusBadRequest}, nil
+			}
+		}
+
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}, nil
+	}
+
+	body, err := json.Marshal(&model)
+	if err != nil {
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}, nil
+	}
+
+	return events.APIGatewayProxyResponse{Body: string(body), StatusCode: 200}, nil
 }
 
 func handleGet(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -47,7 +63,7 @@ func handleGet(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequ
 	case "":
 		return listModels(awsContext)
 	default:
-		return getModel(name)
+		return getModel(awsContext, name)
 	}
 
 }

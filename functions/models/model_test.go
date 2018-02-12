@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"encoding/json"
 	"log"
+	"github.com/d-smith/statusapi-sls/model"
 )
 
 type dynamoDBMockery struct {
@@ -44,6 +45,25 @@ func (m *dynamoDBMockery) Scan(input *dynamodb.ScanInput) (*dynamodb.ScanOutput,
 		scanResult = &dynamodb.ScanOutput{}
 	}
 	return scanResult, nil
+}
+
+func (m *dynamoDBMockery) GetItem(input *dynamodb.GetItemInput)(*dynamodb.GetItemOutput, error) {
+	if  *input.Key["name"].S != "model1" {
+		return nil, awserr.New(dynamodb.ErrCodeResourceNotFoundException, "nope", errors.New("whoops"))
+	}
+
+	out := &dynamodb.GetItemOutput{
+		Item: map[string]*dynamodb.AttributeValue{
+			"name": {
+			S: aws.String("model1"),
+			},
+			"steps": {
+				SS: []*string{aws.String("s1"), aws.String("s2")},
+			},
+		},
+	}
+
+	return out, nil
 }
 
 func TestModelCreate(t *testing.T) {
@@ -157,6 +177,45 @@ func TestModelList(t *testing.T) {
 		})
 
 	}
+}
+
+
+func TestModelGet(t *testing.T) {
+	tests := []struct {
+		name    string
+		request events.APIGatewayProxyRequest
+		scanResult *dynamodb.ScanOutput
+		expect  int
+		err     error
+	}{
+		{
+			"model1",
+			events.APIGatewayProxyRequest{HTTPMethod: "GET", PathParameters:map[string]string{"name":"model1"}},
+			&dynamodb.ScanOutput{},
+			200,
+			nil,
+		},
+	}
+
+	var awsContext awsctx.AWSContext
+	var myMock dynamoDBMockery
+	awsContext.DynamoDBSvc = &myMock
+
+	handler := makeHandler(&awsContext)
+
+	for _, test := range tests {
+		response, err := handler(test.request)
+
+		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.expect, response.StatusCode)
+
+		var output model.Model
+		err = json.Unmarshal([]byte(response.Body),&output)
+		if assert.Nil(t,err) {
+			assert.Equal(t, "model1", output.Name)
+		}
+	}
+
 }
 
 func samePayload(p1, p2 []string) bool {
