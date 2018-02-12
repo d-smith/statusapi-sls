@@ -83,7 +83,7 @@ func handlePut(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequ
 }
 
 func handleOtherRequests(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	return events.APIGatewayProxyResponse{Body: "other\n", StatusCode: 200}, nil
+	return events.APIGatewayProxyResponse{Body: "other\n", StatusCode: http.StatusBadRequest}, nil
 }
 
 func makeHandler(awsContext *awsctx.AWSContext) func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {

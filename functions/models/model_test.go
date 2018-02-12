@@ -55,19 +55,19 @@ func TestModelCreate(t *testing.T) {
 	}{
 		{
 			"handle full request",
-			events.APIGatewayProxyRequest{Body: `{"steps": ["Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "model1"}`},
+			events.APIGatewayProxyRequest{HTTPMethod: "POST", Body: `{"steps": ["Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "model1"}`},
 			200,
 			nil,
 		},
 		{
 			"handle existing model",
-			events.APIGatewayProxyRequest{Body: `{"steps": ["Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "model1"}`},
+			events.APIGatewayProxyRequest{HTTPMethod: "POST", Body: `{"steps": ["Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "model1"}`},
 			400,
 			nil,
 		},
 		{
 			"handle malformed request",
-			events.APIGatewayProxyRequest{Body: `{"steps":Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "x"}`},
+			events.APIGatewayProxyRequest{HTTPMethod: "POST", Body: `{"steps":Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "x"}`},
 			400,
 			nil,
 		},
@@ -77,9 +77,11 @@ func TestModelCreate(t *testing.T) {
 	var myMock dynamoDBMockery
 	awsContext.DynamoDBSvc = &myMock
 
+	handler := makeHandler(&awsContext)
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			response, err := handlePost(&awsContext, test.request)
+			response, err := handler(test.request)
 			assert.IsType(t, test.err, err)
 			assert.Equal(t, test.expect, response.StatusCode)
 		})
@@ -109,7 +111,7 @@ func TestModelList(t *testing.T) {
 	}{
 		{
 			"no results",
-			events.APIGatewayProxyRequest{},
+			events.APIGatewayProxyRequest{HTTPMethod: "GET"},
 			&dynamodb.ScanOutput{},
 			200,
 			nil,
@@ -117,7 +119,7 @@ func TestModelList(t *testing.T) {
 		},
 		{
 			"one results",
-			events.APIGatewayProxyRequest{},
+			events.APIGatewayProxyRequest{HTTPMethod: "GET"},
 			makeOutputWithModelName("model1"),
 			200,
 			[]string{"model1"},
@@ -125,7 +127,7 @@ func TestModelList(t *testing.T) {
 		},
 		{
 			"two results",
-			events.APIGatewayProxyRequest{},
+			events.APIGatewayProxyRequest{HTTPMethod: "GET"},
 			makeOutputWithModelName("model1", "model2"),
 			200,
 			[]string{"model1","model2"},
@@ -137,10 +139,12 @@ func TestModelList(t *testing.T) {
 	var myMock dynamoDBMockery
 	awsContext.DynamoDBSvc = &myMock
 
+	handler := makeHandler(&awsContext)
+
 	for _, test := range tests {
 		myMock.scanresult = test.scanResult
 		t.Run(test.name, func(t *testing.T) {
-			response, err := handleGet(&awsContext, test.request)
+			response, err := handler(test.request)
 
 			assert.IsType(t, test.err, err)
 			assert.Equal(t, test.expect, response.StatusCode)
