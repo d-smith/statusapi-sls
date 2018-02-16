@@ -49,7 +49,7 @@ func getModel(awsContext *awsctx.AWSContext, name string) (events.APIGatewayProx
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}, nil
 	}
 
-	return events.APIGatewayProxyResponse{Body: string(body), StatusCode: 200}, nil
+	return events.APIGatewayProxyResponse{Body: string(body), StatusCode: http.StatusOK}, nil
 }
 
 func handleGet(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -72,7 +72,7 @@ func handlePost(awsContext *awsctx.AWSContext, request events.APIGatewayProxyReq
 	var model model.Model
 	err := json.Unmarshal([]byte(request.Body), &model)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusBadRequest}, nil
 	}
 
 	err = modelAPI.CreateModel(awsContext, &model)
@@ -82,20 +82,30 @@ func handlePost(awsContext *awsctx.AWSContext, request events.APIGatewayProxyReq
 				return events.APIGatewayProxyResponse{Body: "Model with provide name already exists.", StatusCode: http.StatusBadRequest}, nil
 			}
 		}
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}, nil
 	}
 
-	return events.APIGatewayProxyResponse{Body: request.Body, StatusCode: 200}, nil
+	return events.APIGatewayProxyResponse{Body: request.Body, StatusCode: http.StatusOK}, nil
 }
 
 func handlePut(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	var name string
-	if len(request.PathParameters) > 0 {
-		name = request.PathParameters["name"]
+	var model model.Model
+	err := json.Unmarshal([]byte(request.Body), &model)
+	if err != nil {
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusBadRequest}, nil
 	}
 
-	fmt.Println("update model", name)
-	return events.APIGatewayProxyResponse{Body: "models put\n", StatusCode: 200}, nil
+	err = modelAPI.UpdateModel(awsContext, &model)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			if aerr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
+				return events.APIGatewayProxyResponse{Body: "No such model to update exists.", StatusCode: http.StatusBadRequest}, nil
+			}
+		}
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}, nil
+	}
+
+	return events.APIGatewayProxyResponse{Body: request.Body, StatusCode: http.StatusOK}, nil
 }
 
 func handleOtherRequests(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {

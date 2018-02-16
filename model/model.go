@@ -131,3 +131,27 @@ func (m *ModelSvc) CreateModel(awsContext *awsctx.AWSContext, model *Model) erro
 
 	return err
 }
+
+func (m *ModelSvc) UpdateModel(awsContext *awsctx.AWSContext, model *Model) error {
+	fmt.Printf("Updating model %s with steps %v", model.Name, model.Steps)
+
+	uniqueName := expression.AttributeExists(expression.Name("name"))
+	uniqueNameCond, _ := expression.NewBuilder().WithCondition(uniqueName).Build()
+
+	input := &dynamodb.PutItemInput{
+		Item: map[string]*dynamodb.AttributeValue{
+			"name": {
+				S: aws.String(model.Name),
+			},
+			"steps": {
+				SS: slice2SS(model.Steps),
+			},
+		},
+		TableName:                aws.String(modelTable),
+		ConditionExpression:      uniqueNameCond.Condition(),
+		ExpressionAttributeNames: uniqueNameCond.Names(),
+	}
+	_, err := awsContext.DynamoDBSvc.PutItem(input)
+
+	return err
+}
