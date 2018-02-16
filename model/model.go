@@ -69,7 +69,7 @@ func (m *ModelSvc) ListModels(awsContext *awsctx.AWSContext) ([]string, error) {
 	return models, nil
 }
 
-func (m *ModelSvc) GetStepsForModel(awsContext *awsctx.AWSContext, modelName string) ([]string, error) {
+func (m *ModelSvc) getModel(awsContext *awsctx.AWSContext, modelName string)(*dynamodb.GetItemOutput, error) {
 	input := &dynamodb.GetItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
 			"name": {
@@ -79,7 +79,12 @@ func (m *ModelSvc) GetStepsForModel(awsContext *awsctx.AWSContext, modelName str
 		TableName: aws.String(modelTable),
 	}
 
-	result, err := awsContext.DynamoDBSvc.GetItem(input)
+	return awsContext.DynamoDBSvc.GetItem(input)
+}
+
+func (m *ModelSvc) GetStepsForModel(awsContext *awsctx.AWSContext, modelName string) ([]string, error) {
+
+	result, err := m.getModel(awsContext, modelName)
 	if err != nil {
 		return nil, err
 	}
@@ -87,6 +92,20 @@ func (m *ModelSvc) GetStepsForModel(awsContext *awsctx.AWSContext, modelName str
 	steps := result.Item["steps"].SS
 
 	return ss2slice(steps), nil
+}
+
+func (m *ModelSvc) GetModel(awsContext *awsctx.AWSContext, modelName string) (*Model, error) {
+	result, err := m.getModel(awsContext, modelName)
+	if err != nil {
+		return nil, err
+	}
+
+	model := &Model{
+		Name: modelName,
+		Steps:ss2slice(result.Item["steps"].SS),
+	}
+
+	return model, nil
 }
 
 func (m *ModelSvc) CreateModel(awsContext *awsctx.AWSContext, model *Model) error {

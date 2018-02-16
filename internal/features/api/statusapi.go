@@ -56,6 +56,11 @@ func init() {
 		modelState  = ""
 	)
 
+	if apiKey == "" || apiEndpoint == "" {
+		log.Println("Must set both APIKEY and API_ENDPOINT environment variables to run gucumber tests")
+		os.Exit(1)
+	}
+
 	Given(`^a milestone model$`, func() {
 		modelPostUrl := fmt.Sprintf("https://%s/dev/status/api/v1/models", apiEndpoint)
 		log.Printf("request with api key %s going to %s", apiKey, modelPostUrl)

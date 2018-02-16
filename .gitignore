@@ -1,4 +1,5 @@
 coverage.html
+coverage.out
 bin
 .idea
 # Serverless directories
