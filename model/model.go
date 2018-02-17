@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/d-smith/statusapi-sls/awsctx"
 	"os"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
 type Model struct {
@@ -24,22 +25,23 @@ var (
 	modelTable = os.Getenv("MODEL_TABLE")
 )
 
-func slice2SS(strings []string) []*string {
-	var ss []*string
-	for _, s := range strings {
-		ss = append(ss, aws.String(s))
+func slice2L(strings []string) []*dynamodb.AttributeValue {
+	l,err := dynamodbattribute.MarshalList(strings)
+	if err != nil {
+		fmt.Printf("WARNING: error converting string slice to list: %s", err.Error())
 	}
 
-	return ss
+	return l
 }
 
-func ss2slice(ss []*string) []string {
-	var outSlice []string
-	for _, s := range ss {
-		outSlice = append(outSlice, *s)
+func l2slice(l []*dynamodb.AttributeValue) []string {
+	var s []string
+	err := dynamodbattribute.UnmarshalList(l, &s)
+	if err != nil {
+		fmt.Printf("WARNING: error converting list to string slice: %s", err.Error())
 	}
 
-	return outSlice
+	return s
 }
 
 func (m *ModelSvc) ListModels(awsContext *awsctx.AWSContext) ([]string, error) {
@@ -89,9 +91,9 @@ func (m *ModelSvc) GetStepsForModel(awsContext *awsctx.AWSContext, modelName str
 		return nil, err
 	}
 
-	steps := result.Item["steps"].SS
+	steps := result.Item["steps"].L
 
-	return ss2slice(steps), nil
+	return l2slice(steps), nil
 }
 
 func (m *ModelSvc) GetModel(awsContext *awsctx.AWSContext, modelName string) (*Model, error) {
@@ -102,7 +104,7 @@ func (m *ModelSvc) GetModel(awsContext *awsctx.AWSContext, modelName string) (*M
 
 	model := &Model{
 		Name: modelName,
-		Steps:ss2slice(result.Item["steps"].SS),
+		Steps:l2slice(result.Item["steps"].L),
 	}
 
 	return model, nil
@@ -120,7 +122,7 @@ func (m *ModelSvc) CreateModel(awsContext *awsctx.AWSContext, model *Model) erro
 				S: aws.String(model.Name),
 			},
 			"steps": {
-				SS: slice2SS(model.Steps),
+				L: slice2L(model.Steps),
 			},
 		},
 		TableName:                aws.String(modelTable),
@@ -144,7 +146,7 @@ func (m *ModelSvc) UpdateModel(awsContext *awsctx.AWSContext, model *Model) erro
 				S: aws.String(model.Name),
 			},
 			"steps": {
-				SS: slice2SS(model.Steps),
+				L: slice2L(model.Steps),
 			},
 		},
 		TableName:                aws.String(modelTable),
