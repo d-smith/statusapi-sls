@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/d-smith/statusapi-sls/awsctx"
 	"os"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
 type Model struct {
@@ -26,7 +26,7 @@ var (
 )
 
 func slice2L(strings []string) []*dynamodb.AttributeValue {
-	l,err := dynamodbattribute.MarshalList(strings)
+	l, err := dynamodbattribute.MarshalList(strings)
 	if err != nil {
 		fmt.Printf("WARNING: error converting string slice to list: %s", err.Error())
 	}
@@ -71,7 +71,7 @@ func (m *ModelSvc) ListModels(awsContext *awsctx.AWSContext) ([]string, error) {
 	return models, nil
 }
 
-func (m *ModelSvc) getModel(awsContext *awsctx.AWSContext, modelName string)(*dynamodb.GetItemOutput, error) {
+func (m *ModelSvc) getModel(awsContext *awsctx.AWSContext, modelName string) (*dynamodb.GetItemOutput, error) {
 	input := &dynamodb.GetItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
 			"name": {
@@ -103,8 +103,8 @@ func (m *ModelSvc) GetModel(awsContext *awsctx.AWSContext, modelName string) (*M
 	}
 
 	model := &Model{
-		Name: modelName,
-		Steps:l2slice(result.Item["steps"].L),
+		Name:  modelName,
+		Steps: l2slice(result.Item["steps"].L),
 	}
 
 	return model, nil

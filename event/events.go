@@ -5,12 +5,15 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/d-smith/statusapi-sls/awsctx"
+	"log"
 	"os"
+	"strconv"
 	"time"
 )
 
 type StatusEvent struct {
 	TransactionId string `json:"txn_id"`
+	TimeStamp     int64  `json:"timestamp"`
 	EventId       string `json:"event_id"`
 	Step          string `json:"step"`
 	StepState     string `json:"step_state"`
@@ -70,6 +73,45 @@ func (es *EventSvc) GetStatusEventsForTxn(awsContext *awsctx.AWSContext, txnId s
 
 	return activeEvents, completedEvents, nil
 
+}
+
+func (es *EventSvc) GetEventsForTxn(awsContext *awsctx.AWSContext, txnId string) ([]StatusEvent, error) {
+	input := &dynamodb.QueryInput{
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":iid": {
+				S: aws.String(txnId),
+			},
+		},
+		KeyConditionExpression: aws.String("transactionId = :iid"),
+		TableName:              aws.String(instanceTable),
+	}
+
+	qout, err := awsContext.DynamoDBSvc.Query(input)
+	if err != nil {
+		return nil, err
+	}
+
+	var events []StatusEvent
+	items := qout.Items
+	for _, item := range items {
+
+		ts, convertErr := strconv.ParseInt(*item["eventTimestamp"].N, 10, 64)
+		if convertErr != nil {
+			log.Printf("WARNING: Error converting timestamp from ddb string to int: %s", convertErr)
+		}
+
+		event := StatusEvent{
+			TransactionId: *item["transactionId"].S,
+			TimeStamp:     ts,
+			EventId:       *item["eventId"].S,
+			Step:          *item["step"].S,
+			StepState:     *item["step_state"].S,
+		}
+
+		events = append(events, event)
+	}
+
+	return events, err
 }
 
 func (es *EventSvc) StoreEvent(awsContext *awsctx.AWSContext, event *StatusEvent) error {

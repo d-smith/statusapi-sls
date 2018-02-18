@@ -1,18 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/d-smith/statusapi-sls/awsctx"
-	"github.com/stretchr/testify/assert"
-	"testing"
-	"github.com/aws/aws-sdk-go/aws"
-	"encoding/json"
-	"log"
 	"github.com/d-smith/statusapi-sls/model"
+	"github.com/stretchr/testify/assert"
+	"log"
+	"testing"
 )
 
 type dynamoDBMockery struct {
@@ -47,15 +47,15 @@ func (m *dynamoDBMockery) Scan(input *dynamodb.ScanInput) (*dynamodb.ScanOutput,
 	return scanResult, nil
 }
 
-func (m *dynamoDBMockery) GetItem(input *dynamodb.GetItemInput)(*dynamodb.GetItemOutput, error) {
-	if  *input.Key["name"].S != "model1" {
+func (m *dynamoDBMockery) GetItem(input *dynamodb.GetItemInput) (*dynamodb.GetItemOutput, error) {
+	if *input.Key["name"].S != "model1" {
 		return nil, awserr.New(dynamodb.ErrCodeResourceNotFoundException, "nope", errors.New("whoops"))
 	}
 
 	out := &dynamodb.GetItemOutput{
 		Item: map[string]*dynamodb.AttributeValue{
 			"name": {
-			S: aws.String("model1"),
+				S: aws.String("model1"),
 			},
 			"steps": {
 				SS: []*string{aws.String("s1"), aws.String("s2")},
@@ -109,11 +109,11 @@ func TestModelCreate(t *testing.T) {
 	}
 }
 
-func makeOutputWithModelName(names... string)*dynamodb.ScanOutput {
+func makeOutputWithModelName(names ...string) *dynamodb.ScanOutput {
 	scanOutput := &dynamodb.ScanOutput{}
 	for _, name := range names {
 		itemdata := make(map[string]*dynamodb.AttributeValue)
-		itemdata["name"] = &dynamodb.AttributeValue{S:aws.String(name)}
+		itemdata["name"] = &dynamodb.AttributeValue{S: aws.String(name)}
 		scanOutput.Items = append(scanOutput.Items, itemdata)
 	}
 
@@ -122,12 +122,12 @@ func makeOutputWithModelName(names... string)*dynamodb.ScanOutput {
 
 func TestModelList(t *testing.T) {
 	tests := []struct {
-		name    string
-		request events.APIGatewayProxyRequest
+		name       string
+		request    events.APIGatewayProxyRequest
 		scanResult *dynamodb.ScanOutput
-		expect  int
-		payload []string
-		err     error
+		expect     int
+		payload    []string
+		err        error
 	}{
 		{
 			"no results",
@@ -150,7 +150,7 @@ func TestModelList(t *testing.T) {
 			events.APIGatewayProxyRequest{HTTPMethod: "GET"},
 			makeOutputWithModelName("model1", "model2"),
 			200,
-			[]string{"model1","model2"},
+			[]string{"model1", "model2"},
 			nil,
 		},
 	}
@@ -170,8 +170,8 @@ func TestModelList(t *testing.T) {
 			assert.Equal(t, test.expect, response.StatusCode)
 
 			var output []string
-			err = json.Unmarshal([]byte(response.Body),&output)
-			if assert.Nil(t,err) {
+			err = json.Unmarshal([]byte(response.Body), &output)
+			if assert.Nil(t, err) {
 				assert.True(t, samePayload(test.payload, output))
 			}
 		})
@@ -179,18 +179,17 @@ func TestModelList(t *testing.T) {
 	}
 }
 
-
 func TestModelGet(t *testing.T) {
 	tests := []struct {
-		name    string
-		request events.APIGatewayProxyRequest
+		name       string
+		request    events.APIGatewayProxyRequest
 		scanResult *dynamodb.ScanOutput
-		expect  int
-		err     error
+		expect     int
+		err        error
 	}{
 		{
 			"model1",
-			events.APIGatewayProxyRequest{HTTPMethod: "GET", PathParameters:map[string]string{"name":"model1"}},
+			events.APIGatewayProxyRequest{HTTPMethod: "GET", PathParameters: map[string]string{"name": "model1"}},
 			&dynamodb.ScanOutput{},
 			200,
 			nil,
@@ -210,8 +209,8 @@ func TestModelGet(t *testing.T) {
 		assert.Equal(t, test.expect, response.StatusCode)
 
 		var output model.Model
-		err = json.Unmarshal([]byte(response.Body),&output)
-		if assert.Nil(t,err) {
+		err = json.Unmarshal([]byte(response.Body), &output)
+		if assert.Nil(t, err) {
 			assert.Equal(t, "model1", output.Name)
 		}
 	}

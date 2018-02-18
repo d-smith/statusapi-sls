@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/d-smith/statusapi-sls/awsctx"
+	"github.com/d-smith/statusapi-sls/event"
 	"github.com/d-smith/statusapi-sls/instance"
 	"log"
 	"net/http"
@@ -16,6 +17,7 @@ import (
 
 var (
 	instanceSvc = instance.NewInstanceSvc()
+	eventsSvc   = event.NewEventSvc()
 )
 
 func listInstances() (events.APIGatewayProxyResponse, error) {
@@ -40,6 +42,22 @@ func getModelStates(awsContext *awsctx.AWSContext, id, model string) (events.API
 	return events.APIGatewayProxyResponse{Body: string(bodyOut), StatusCode: http.StatusOK}, nil
 }
 
+func retrieveInstance(awsContext *awsctx.AWSContext, id string) (events.APIGatewayProxyResponse, error) {
+	txnEvents, err := eventsSvc.GetEventsForTxn(awsContext, id)
+	if err != nil {
+		fmt.Println("Error retrieving events", err.Error())
+		return events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}, nil
+	}
+
+	bodyOut, err := json.Marshal(&txnEvents)
+	if err != nil {
+		fmt.Println("Error marshalling response", err.Error())
+		return events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}, nil
+	}
+
+	return events.APIGatewayProxyResponse{Body: string(bodyOut), StatusCode: http.StatusOK}, nil
+}
+
 func getInstance(awsContext *awsctx.AWSContext, id string, queryStringParams map[string]string) (events.APIGatewayProxyResponse, error) {
 	fmt.Println("get instance\n")
 	model := queryStringParams["model"]
@@ -47,7 +65,7 @@ func getInstance(awsContext *awsctx.AWSContext, id string, queryStringParams map
 		return getModelStates(awsContext, id, model)
 	}
 
-	return events.APIGatewayProxyResponse{Body: "other\n", StatusCode: http.StatusOK}, nil
+	return retrieveInstance(awsContext, id)
 }
 
 func handleGet(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {

@@ -12,3 +12,8 @@ Feature: Model state for events
     Then the model state reflects the update
     And the model update is durable
     And the model reflects future events
+
+  @events
+  Scenario:
+    When I post events for a transaction
+    Then I can retrieve those events using the transaction id

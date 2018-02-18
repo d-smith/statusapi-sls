@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/d-smith/statusapi-sls/model"
 	. "github.com/gucumber/gucumber"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -13,7 +14,6 @@ import (
 	"net/http"
 	"os"
 	"time"
-	"github.com/d-smith/statusapi-sls/model"
 )
 
 func postEventsForModel(apiKey, apiEndpoint string) (string, error) {
@@ -99,7 +99,7 @@ func retrieveModelState(apiKey, apiEndpoint, txnId, testBase string) (string, er
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "",err
+		return "", err
 	}
 
 	return string(body), nil
@@ -225,7 +225,7 @@ func init() {
 		log.Println(modelState)
 
 		newModelState, err := retrieveModelState(apiKey, apiEndpoint, txnId, testBase)
-		if !assert.Nil(T,err) {
+		if !assert.Nil(T, err) {
 			return
 		}
 
@@ -285,7 +285,7 @@ func init() {
 	})
 
 	And(`^the model reflects future events$`, func() {
-		err := postNewEventForModel(apiKey,apiEndpoint, txnId)
+		err := postNewEventForModel(apiKey, apiEndpoint, txnId)
 		if !assert.Nil(T, err) {
 			return
 		}
@@ -295,14 +295,12 @@ func init() {
 			State string `json:"step_state"`
 		}
 
-
-
 		newModelState, err := retrieveModelState(apiKey, apiEndpoint, txnId, testBase)
-		if !assert.Nil(T,err) {
+		if !assert.Nil(T, err) {
 			return
 		}
 
-		log.Println("new model state",newModelState)
+		log.Println("new model state", newModelState)
 
 		var states []ModelState
 		err = json.Unmarshal([]byte(newModelState), &states)
