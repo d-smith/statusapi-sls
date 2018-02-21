@@ -102,6 +102,9 @@ functions:
           private: true
   authorizer:
     handler: bin/authorizer
+    environment:
+      AUTH0_AUDIENCE: ${env:AUTH0_AUDIENCE}
+      AUTH0_DOMAIN: ${env:AUTH0_DOMAIN}
 
 
 #    The following are a few example events you can configure

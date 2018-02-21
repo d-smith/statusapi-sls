@@ -53,6 +53,12 @@ func getModel(awsContext *awsctx.AWSContext, name string) (events.APIGatewayProx
 }
 
 func handleGet(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	fmt.Printf("request content: %+v", request.RequestContext)
+
+	authZContext := request.RequestContext.Authorizer
+	fmt.Println("tenent", authZContext["tenent"])
+	fmt.Println("principalId", authZContext["principalId"])
+
 	//Is there a name from the path?
 	var name string
 	if len(request.PathParameters) > 0 {
