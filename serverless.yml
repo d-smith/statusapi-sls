@@ -73,6 +73,11 @@ functions:
           path: status/api/v1/models
           method: get
           private: true
+          authorizer:
+            name: authorizer
+            resultTtlInSeconds: 0
+            identitySource: method.request.header.Authorization
+            type: token
       - http:
           path: status/api/v1/models
           method: post
@@ -95,6 +100,8 @@ functions:
           path: status/api/v1/events
           method: post
           private: true
+  authorizer:
+    handler: bin/authorizer
 
 
 #    The following are a few example events you can configure
