@@ -15,7 +15,7 @@ import (
 )
 
 // Help function to generate an IAM policy
-func generatePolicy(principalId, effect, resource, tenent string) events.APIGatewayCustomAuthorizerResponse {
+func generatePolicy(principalId, effect, resource, tenant string) events.APIGatewayCustomAuthorizerResponse {
 	authResponse := events.APIGatewayCustomAuthorizerResponse{PrincipalID: principalId}
 
 	if effect != "" && resource != "" {
@@ -33,7 +33,7 @@ func generatePolicy(principalId, effect, resource, tenent string) events.APIGate
 
 	// Optional output with custom properties of the String, Number or Boolean type.
 	authResponse.Context = map[string]interface{} {
-		"tenent":  tenent,
+		"tenant":  tenant,
 	}
 	return authResponse
 }
@@ -69,14 +69,19 @@ func handleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Error: Invalid token")
 	}
 
-	tenent := claims["https://status.aps-dev.net/tenent"]
-	if tenent == "" {
+	tenant,ok := claims["https://status.aps-dev.net/tenant"].(string)
+	if !ok ||tenant == "" {
+		log.Println("Unable to extract tenant from token")
 		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Unauthorized")
 	}
 
-	name := claims["name"]
+	name, ok := claims["name"].(string)
+	if !ok || name == "" {
+		log.Println("Unable to extract name (principal) from token")
+		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Unauthorized")
+	}
 
-	return generatePolicy(name.(string), "Allow", event.MethodArn, tenent.(string)), nil
+	return generatePolicy(name, "Allow", event.MethodArn, tenant), nil
 
 }
 

@@ -56,7 +56,7 @@ func handleGet(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequ
 	fmt.Printf("request content: %+v", request.RequestContext)
 
 	authZContext := request.RequestContext.Authorizer
-	fmt.Println("tenent", authZContext["tenent"])
+	fmt.Println("tenant", authZContext["tenant"])
 	fmt.Println("principalId", authZContext["principalId"])
 
 	//Is there a name from the path?
