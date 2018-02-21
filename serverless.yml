@@ -64,30 +64,37 @@ functions:
       - http:
           path: status/api/v1/models/{name}
           method: get
+          private: true
       - http:
           path: status/api/v1/models/{name}
           method: put
+          private: true
       - http:
           path: status/api/v1/models
           method: get
+          private: true
       - http:
           path: status/api/v1/models
           method: post
+          private: true
   instances:
     handler: bin/instances
     events:
       - http:
           path: status/api/v1/instances
           method: get
+          private: true
       - http:
           path: status/api/v1/instances/{id}
           method: get
+          private: true
   statusevents:
     handler: bin/events
     events:
       - http:
           path: status/api/v1/events
           method: post
+          private: true
 
 
 #    The following are a few example events you can configure
