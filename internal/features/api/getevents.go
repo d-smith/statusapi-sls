@@ -13,7 +13,7 @@ import (
 	"os"
 )
 
-func retrieveTxnEvents(apiKey, apiEndpoint, txnId string) ([]event.StatusEvent, error) {
+func retrieveTxnEvents(apiKey, apiEndpoint, idToken, txnId string) ([]event.StatusEvent, error) {
 	//curl -H "x-api-key: XXXX"  'https://ENDPOINT/dev/status/api/v1/instances/1a?model=model1'
 	//https://oou3pdrtw2.execute-api.us-east-1.amazonaws.com/dev/status/api/v1/instances/{id}
 	requestUrl := fmt.Sprintf("https://%s/dev/status/api/v1/instances/%s", apiEndpoint, txnId)
@@ -24,6 +24,7 @@ func retrieveTxnEvents(apiKey, apiEndpoint, txnId string) ([]event.StatusEvent, 
 		return nil, err
 	}
 	req.Header.Add("x-api-key", apiKey)
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 	client := &http.Client{}
 	log.Println("make test request")
@@ -56,6 +57,7 @@ func init() {
 	var (
 		apiKey      = os.Getenv("APIKEY")
 		apiEndpoint = os.Getenv("API_ENDPOINT")
+		idToken = os.Getenv("STATUS_ID_TOKEN")
 		txnId       string
 	)
 
@@ -66,7 +68,7 @@ func init() {
 
 	When(`^I post events for a transaction$`, func() {
 		var err error
-		txnId, err = postEventsForModel(apiKey, apiEndpoint)
+		txnId, err = postEventsForModel(apiKey, apiEndpoint, idToken)
 		if !assert.Nil(T, err) {
 			log.Printf(err.Error())
 			return
@@ -74,7 +76,7 @@ func init() {
 	})
 
 	Then(`^I can retrieve those events using the transaction id$`, func() {
-		statusEvents, err := retrieveTxnEvents(apiKey, apiEndpoint, txnId)
+		statusEvents, err := retrieveTxnEvents(apiKey, apiEndpoint, idToken, txnId)
 		if assert.Nil(T, err) {
 			log.Printf("%v", statusEvents)
 			assert.Equal(T, 2, len(statusEvents))

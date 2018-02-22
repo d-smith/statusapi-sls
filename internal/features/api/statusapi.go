@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-func postEventsForModel(apiKey, apiEndpoint string) (string, error) {
+func postEventsForModel(apiKey, apiEndpoint, idToken string) (string, error) {
 	eventPostEndpoint := fmt.Sprintf("https://%s/dev/status/api/v1/events", apiEndpoint)
 	log.Println("send to", eventPostEndpoint)
 	txnId := fmt.Sprintf("txn-%d", rand.Int())
@@ -29,6 +29,7 @@ func postEventsForModel(apiKey, apiEndpoint string) (string, error) {
 			return "", err
 		}
 		req.Header.Add("x-api-key", apiKey)
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 		client := &http.Client{}
 		log.Println("post event")
@@ -46,7 +47,7 @@ func postEventsForModel(apiKey, apiEndpoint string) (string, error) {
 	return txnId, nil
 }
 
-func postNewEventForModel(apiKey, apiEndpoint, txnId string) error {
+func postNewEventForModel(apiKey, apiEndpoint, idToken, txnId string) error {
 	eventPostEndpoint := fmt.Sprintf("https://%s/dev/status/api/v1/events", apiEndpoint)
 	log.Println("send to", eventPostEndpoint)
 	payload := fmt.Sprintf(`{"txn_id":"%s","event_id":"100","step":"ess3","step_state":"completed"}`, txnId)
@@ -57,6 +58,7 @@ func postNewEventForModel(apiKey, apiEndpoint, txnId string) error {
 		return err
 	}
 	req.Header.Add("x-api-key", apiKey)
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 	client := &http.Client{}
 	log.Println("post event")
@@ -73,7 +75,7 @@ func postNewEventForModel(apiKey, apiEndpoint, txnId string) error {
 	return nil
 }
 
-func retrieveModelState(apiKey, apiEndpoint, txnId, testBase string) (string, error) {
+func retrieveModelState(apiKey, apiEndpoint, idToken, txnId, testBase string) (string, error) {
 	//curl -H "x-api-key: XXXX"  'https://ENDPOINT/dev/status/api/v1/instances/1a?model=model1'
 	requestUrl := fmt.Sprintf("https://%s/dev/status/api/v1/instances/%s?model=model%s", apiEndpoint, txnId, testBase)
 	log.Println("get", requestUrl)
@@ -83,6 +85,7 @@ func retrieveModelState(apiKey, apiEndpoint, txnId, testBase string) (string, er
 		return "", err
 	}
 	req.Header.Add("x-api-key", apiKey)
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 	client := &http.Client{}
 	log.Println("make test request")
@@ -111,6 +114,7 @@ func init() {
 	var (
 		apiKey      = os.Getenv("APIKEY")
 		apiEndpoint = os.Getenv("API_ENDPOINT")
+		idToken = os.Getenv("STATUS_ID_TOKEN")
 		testBase    = fmt.Sprintf("x%d", rand.Int())
 		txnId       = ""
 		modelState  = ""
@@ -125,11 +129,15 @@ func init() {
 		modelPostUrl := fmt.Sprintf("https://%s/dev/status/api/v1/models", apiEndpoint)
 		log.Printf("request with api key %s going to %s", apiKey, modelPostUrl)
 		payload := fmt.Sprintf(`{"name":"model%s", "steps":["s1", "s2", "s3"]}`, testBase)
+		log.Println("posting", payload)
 		req, err := http.NewRequest("POST", modelPostUrl, bytes.NewBuffer([]byte(payload)))
 		if !assert.Nil(T, err) {
 			return
 		}
 		req.Header.Add("x-api-key", apiKey)
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", idToken))
+
+		log.Println(req.Header)
 
 		client := &http.Client{}
 		log.Println("make test request")
@@ -147,7 +155,7 @@ func init() {
 
 	And(`^some correlated events for the model$`, func() {
 		var err error
-		txnId, err = postEventsForModel(apiKey, apiEndpoint)
+		txnId, err = postEventsForModel(apiKey, apiEndpoint, idToken)
 		if !assert.Nil(T, err) {
 			log.Printf("error on posting events: %s", err.Error())
 			return
@@ -156,7 +164,7 @@ func init() {
 
 	When(`^I retrieve the model state for the correlated events$`, func() {
 		var err error
-		modelState, err = retrieveModelState(apiKey, apiEndpoint, txnId, testBase)
+		modelState, err = retrieveModelState(apiKey, apiEndpoint, idToken, txnId, testBase)
 		assert.Nil(T, err)
 	})
 
@@ -201,6 +209,7 @@ func init() {
 			return
 		}
 		req.Header.Add("x-api-key", apiKey)
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 		client := &http.Client{}
 		log.Println("make test request")
@@ -224,7 +233,7 @@ func init() {
 
 		log.Println(modelState)
 
-		newModelState, err := retrieveModelState(apiKey, apiEndpoint, txnId, testBase)
+		newModelState, err := retrieveModelState(apiKey, apiEndpoint, idToken, txnId, testBase)
 		if !assert.Nil(T, err) {
 			return
 		}
@@ -257,6 +266,7 @@ func init() {
 			return
 		}
 		req.Header.Add("x-api-key", apiKey)
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 		client := &http.Client{}
 		log.Println("make test request")
@@ -285,7 +295,7 @@ func init() {
 	})
 
 	And(`^the model reflects future events$`, func() {
-		err := postNewEventForModel(apiKey, apiEndpoint, txnId)
+		err := postNewEventForModel(apiKey, apiEndpoint, idToken, txnId)
 		if !assert.Nil(T, err) {
 			return
 		}
@@ -295,7 +305,7 @@ func init() {
 			State string `json:"step_state"`
 		}
 
-		newModelState, err := retrieveModelState(apiKey, apiEndpoint, txnId, testBase)
+		newModelState, err := retrieveModelState(apiKey, apiEndpoint, idToken, txnId, testBase)
 		if !assert.Nil(T, err) {
 			return
 		}

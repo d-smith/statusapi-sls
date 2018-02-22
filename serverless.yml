@@ -65,18 +65,38 @@ functions:
           path: status/api/v1/models/{name}
           method: get
           private: true
+          authorizer:
+            name: authorizer
+            resultTtlInSeconds: 0
+            identitySource: method.request.header.Authorization
+            type: token
       - http:
           path: status/api/v1/models/{name}
           method: put
           private: true
+          authorizer:
+            name: authorizer
+            resultTtlInSeconds: 0
+            identitySource: method.request.header.Authorization
+            type: token
       - http:
           path: status/api/v1/models
           method: get
           private: true
+          authorizer:
+            name: authorizer
+            resultTtlInSeconds: 0
+            identitySource: method.request.header.Authorization
+            type: token
       - http:
           path: status/api/v1/models
           method: post
           private: true
+          authorizer:
+            name: authorizer
+            resultTtlInSeconds: 0
+            identitySource: method.request.header.Authorization
+            type: token
   instances:
     handler: bin/instances
     events:
@@ -84,10 +104,20 @@ functions:
           path: status/api/v1/instances
           method: get
           private: true
+          authorizer:
+            name: authorizer
+            resultTtlInSeconds: 0
+            identitySource: method.request.header.Authorization
+            type: token
       - http:
           path: status/api/v1/instances/{id}
           method: get
           private: true
+          authorizer:
+            name: authorizer
+            resultTtlInSeconds: 0
+            identitySource: method.request.header.Authorization
+            type: token
   statusevents:
     handler: bin/events
     events:
@@ -95,6 +125,17 @@ functions:
           path: status/api/v1/events
           method: post
           private: true
+          authorizer:
+            name: authorizer
+            resultTtlInSeconds: 0
+            identitySource: method.request.header.Authorization
+            type: token
+
+  authorizer:
+    handler: bin/authorizer
+    environment:
+      AUTH0_AUDIENCE: ${env:AUTH0_AUDIENCE}
+      AUTH0_DOMAIN: ${env:AUTH0_DOMAIN}
 
 
 #    The following are a few example events you can configure

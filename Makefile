@@ -1,4 +1,4 @@
-compile: models instances events
+compile: models instances events authorizer
 
 models:
 	GOOS=linux go build -o bin/models functions/models/*.go
@@ -8,3 +8,6 @@ instances:
 
 events:
 	GOOS=linux go build -o bin/events functions/events/*.go
+
+authorizer:
+	GOOS=linux go build -o bin/authorizer functions/authorizer/*.go
