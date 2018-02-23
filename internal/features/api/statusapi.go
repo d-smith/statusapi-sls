@@ -28,7 +28,7 @@ func postEventsForModel(apiKey, apiEndpoint, idToken string) (string, error) {
 		if !assert.Nil(T, err) {
 			return "", err
 		}
-		req.Header.Add("x-api-key", apiKey)
+		//req.Header.Add("x-api-key", apiKey)
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 		client := &http.Client{}
@@ -57,7 +57,7 @@ func postNewEventForModel(apiKey, apiEndpoint, idToken, txnId string) error {
 	if !assert.Nil(T, err) {
 		return err
 	}
-	req.Header.Add("x-api-key", apiKey)
+	//req.Header.Add("x-api-key", apiKey)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 	client := &http.Client{}
@@ -84,7 +84,7 @@ func retrieveModelState(apiKey, apiEndpoint, idToken, txnId, testBase string) (s
 	if err != nil {
 		return "", err
 	}
-	req.Header.Add("x-api-key", apiKey)
+	//req.Header.Add("x-api-key", apiKey)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 	client := &http.Client{}
@@ -134,7 +134,7 @@ func init() {
 		if !assert.Nil(T, err) {
 			return
 		}
-		req.Header.Add("x-api-key", apiKey)
+		//req.Header.Add("x-api-key", apiKey)
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 		log.Println(req.Header)
@@ -208,7 +208,7 @@ func init() {
 		if !assert.Nil(T, err) {
 			return
 		}
-		req.Header.Add("x-api-key", apiKey)
+		//req.Header.Add("x-api-key", apiKey)
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 		client := &http.Client{}
@@ -265,7 +265,7 @@ func init() {
 		if !assert.Nil(T, err) {
 			return
 		}
-		req.Header.Add("x-api-key", apiKey)
+		//req.Header.Add("x-api-key", apiKey)
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 		client := &http.Client{}

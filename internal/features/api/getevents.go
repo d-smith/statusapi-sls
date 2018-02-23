@@ -17,14 +17,16 @@ func retrieveTxnEvents(apiKey, apiEndpoint, idToken, txnId string) ([]event.Stat
 	//curl -H "x-api-key: XXXX"  'https://ENDPOINT/dev/status/api/v1/instances/1a?model=model1'
 	//https://oou3pdrtw2.execute-api.us-east-1.amazonaws.com/dev/status/api/v1/instances/{id}
 	requestUrl := fmt.Sprintf("https://%s/dev/status/api/v1/instances/%s", apiEndpoint, txnId)
-	log.Println("get", requestUrl)
+	log.Println("retrieveTxnEvents: get", requestUrl)
 
 	req, err := http.NewRequest("GET", requestUrl, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("x-api-key", apiKey)
+//	req.Header.Add("x-api-key", apiKey)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", idToken))
+
+	log.Println("auth header", req.Header.Get("Authorization"))
 
 	client := &http.Client{}
 	log.Println("make test request")
@@ -35,7 +37,7 @@ func retrieveTxnEvents(apiKey, apiEndpoint, idToken, txnId string) ([]event.Stat
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("http call status not ok")
+		return nil, errors.New(fmt.Sprintf("http call status not ok: %d", resp.StatusCode))
 	}
 
 	defer resp.Body.Close()
