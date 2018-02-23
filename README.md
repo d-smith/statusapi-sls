@@ -71,4 +71,9 @@ aws apigateway update-rest-api --rest-api-id o304m2z79a --patch-operations op=re
 </pre>
 
 Note that the API must then be redeployed via sls deploy for the API
-settings update to take effect.
+settings update to take effect. So the deploy process is:
+
+* Deploy
+* Configure gateway settings
+* Redeploy
+* Seed DDB with tenant keys
