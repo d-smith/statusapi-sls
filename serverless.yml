@@ -6,9 +6,14 @@ provider:
   runtime: go1.x
   apiKeys:
     - statusapi-${opt:stage, self:provider.stage}
+  usagePlan:
+    throttle:
+      burstLimit: 2
+      rateLimit: 1
   environment:
     MODEL_TABLE: ${self:service}-${opt:stage, self:provider.stage}-model
     INSTANCE_TABLE: ${self:service}-${opt:stage, self:provider.stage}-instance
+    TENANT_TABLE: ${self:service}-${opt:stage, self:provider.stage}-tenant
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -26,6 +31,14 @@ provider:
         - dynamodb:GetItem
         - dynamodb:PutItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.INSTANCE_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TENANT_TABLE}"
+
 
 # you can overwrite defaults here
 #  stage: dev
@@ -191,6 +204,23 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: ${self:provider.environment.MODEL_TABLE}
+
+    TenantKeyTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: tenant
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: tenant
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.TENANT_TABLE}
+
 
 
     InstanceTable:

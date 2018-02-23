@@ -12,10 +12,43 @@ import (
 	"net/http"
 	"fmt"
 	"log"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/aws"
 )
 
+var (
+	tenantTable = os.Getenv("TENANT_TABLE")
+	sess = session.New()
+	svc = dynamodb.New(sess)
+)
+
+func getKeyForTenant(tenant string, ddbSvc *dynamodb.DynamoDB) (string, error) {
+	input := &dynamodb.GetItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"tenant": {
+				S: aws.String(tenant),
+			},
+		},
+		TableName: aws.String(tenantTable),
+	}
+
+	item,err := ddbSvc.GetItem(input)
+	if err != nil {
+		return "", err
+	}
+
+	if item == nil || item.Item == nil || item.Item["key"] == nil {
+		return "", nil
+	}
+
+	return *item.Item["key"].S, nil
+}
+
+
+
 // Help function to generate an IAM policy
-func generatePolicy(principalId, effect, resource, tenant string) events.APIGatewayCustomAuthorizerResponse {
+func generatePolicy(principalId, apiKey, effect, resource, tenant string) events.APIGatewayCustomAuthorizerResponse {
 	authResponse := events.APIGatewayCustomAuthorizerResponse{PrincipalID: principalId}
 
 	if effect != "" && resource != "" {
@@ -35,6 +68,9 @@ func generatePolicy(principalId, effect, resource, tenant string) events.APIGate
 	authResponse.Context = map[string]interface{} {
 		"tenant":  tenant,
 	}
+
+	authResponse.UsageIdentifierKey = apiKey
+
 	return authResponse
 }
 
@@ -57,8 +93,8 @@ func handleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 	fakeRequest.Header.Add("Authorization", token)
 	jot, err := validator.ValidateRequest(fakeRequest)
 	if err != nil {
-		fmt.Println("WARNING", err.Error())
-		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Error: Invalid token")
+		log.Println("WARNING", err.Error())
+		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Invalid token")
 	}
 
 	claims := map[string]interface{}{}
@@ -66,7 +102,7 @@ func handleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 	err = validator.Claims(fakeRequest, jot, &claims)
 	if err != nil {
 		log.Println("Error looking at claims", err.Error())
-		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Error: Invalid token")
+		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Invalid token")
 	}
 
 	tenant,ok := claims["https://status.aps-dev.net/tenant"].(string)
@@ -75,13 +111,23 @@ func handleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Unauthorized")
 	}
 
+	log.Println("tenant from claim", tenant)
+
+	apiKey, err := getKeyForTenant(tenant, svc)
+	if err != nil || apiKey == "" {
+		log.Println("No API key in tenant table for tenant", tenant)
+		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Unauthorized")
+	}
+
+	log.Println("key lookup ok", apiKey)
+
 	name, ok := claims["name"].(string)
 	if !ok || name == "" {
 		log.Println("Unable to extract name (principal) from token")
 		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Unauthorized")
 	}
 
-	return generatePolicy(name, "Allow", event.MethodArn, tenant), nil
+	return generatePolicy(name, apiKey, "Allow", event.MethodArn, tenant), nil
 
 }
 
