@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/aws"
+	"strings"
 )
 
 var (
@@ -22,6 +23,35 @@ var (
 	sess = session.New()
 	svc = dynamodb.New(sess)
 )
+
+func allApiResources(methodArn string) []string {
+
+	//API resource arns look like arn:aws:execute-api:<region>:<account>:<restapi id>/<stage>/<method>/uri
+
+	arnParts := strings.Split(methodArn, ":")
+	if len(arnParts) != 6 {
+		log.Println("WARNING: expected 5 parts for method ARN", methodArn)
+		return []string{methodArn}
+	}
+
+	arnBase := fmt.Sprintf("%s:%s:%s:%s:%s:", arnParts[0],arnParts[1],arnParts[2],arnParts[3],arnParts[4])
+	restPart := arnParts[5]
+
+	//Split the restPart on / - first entry will be the restapi id
+	uriParts := strings.Split(restPart, "/")
+	restapiId := uriParts[0]
+
+	return []string {
+		fmt.Sprintf("%s%s/*/POST/status/api/v1/events", arnBase,restapiId),
+		fmt.Sprintf("%s%s/*/GET/status/api/v1/instances", arnBase, restapiId),
+		fmt.Sprintf("%s%s/*/GET/status/api/v1/instances/*", arnBase, restapiId),
+		fmt.Sprintf("%s%s/*/GET/status/api/v1/models", arnBase, restapiId),
+		fmt.Sprintf("%s%s/*/POST/status/api/v1/models", arnBase, restapiId),
+		fmt.Sprintf("%s%s/*/GET/status/api/v1/models/*", arnBase, restapiId),
+		fmt.Sprintf("%s%s/*/PUT/status/api/v1/models/*", arnBase, restapiId),
+	}
+
+}
 
 func getKeyForTenant(tenant string, ddbSvc *dynamodb.DynamoDB) (string, error) {
 	input := &dynamodb.GetItemInput{
@@ -51,6 +81,8 @@ func getKeyForTenant(tenant string, ddbSvc *dynamodb.DynamoDB) (string, error) {
 func generatePolicy(principalId, apiKey, effect, resource, tenant string) events.APIGatewayCustomAuthorizerResponse {
 	authResponse := events.APIGatewayCustomAuthorizerResponse{PrincipalID: principalId}
 
+	allResources := allApiResources(resource)
+
 	if effect != "" && resource != "" {
 		authResponse.PolicyDocument = events.APIGatewayCustomAuthorizerPolicy{
 			Version: "2012-10-17",
@@ -58,7 +90,7 @@ func generatePolicy(principalId, apiKey, effect, resource, tenant string) events
 				{
 					Action:   []string{"execute-api:Invoke"},
 					Effect:   effect,
-					Resource: []string{resource},
+					Resource: allResources,
 				},
 			},
 		}
@@ -70,6 +102,8 @@ func generatePolicy(principalId, apiKey, effect, resource, tenant string) events
 	}
 
 	authResponse.UsageIdentifierKey = apiKey
+
+	log.Printf("Authorizer response: %+v\n", authResponse)
 
 	return authResponse
 }

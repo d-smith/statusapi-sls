@@ -80,7 +80,7 @@ functions:
           private: true
           authorizer:
             name: authorizer
-            resultTtlInSeconds: 0
+            resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             type: token
       - http:
@@ -89,7 +89,7 @@ functions:
           private: true
           authorizer:
             name: authorizer
-            resultTtlInSeconds: 0
+            resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             type: token
       - http:
@@ -98,7 +98,7 @@ functions:
           private: true
           authorizer:
             name: authorizer
-            resultTtlInSeconds: 0
+            resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             type: token
       - http:
@@ -107,7 +107,7 @@ functions:
           private: true
           authorizer:
             name: authorizer
-            resultTtlInSeconds: 0
+            resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             type: token
   instances:
@@ -119,7 +119,7 @@ functions:
           private: true
           authorizer:
             name: authorizer
-            resultTtlInSeconds: 0
+            resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             type: token
       - http:
@@ -128,7 +128,7 @@ functions:
           private: true
           authorizer:
             name: authorizer
-            resultTtlInSeconds: 0
+            resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             type: token
   statusevents:
@@ -140,7 +140,7 @@ functions:
           private: true
           authorizer:
             name: authorizer
-            resultTtlInSeconds: 0
+            resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             type: token
 
