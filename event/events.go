@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"time"
+	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 )
 
 type StatusEvent struct {
@@ -30,18 +31,29 @@ func NewEventSvc() *EventSvc {
 }
 
 func (es *EventSvc) GetStatusEventsForTxn(awsContext *awsctx.AWSContext, txnId string) (map[string]StatusEvent, map[string]StatusEvent, error) {
+
+	log.Println("EventSvc GetStatusEventsForTxn")
+	keyCond := expression.Key("transactionId").Equal(expression.Value(txnId))
+
+	expr, err := expression.NewBuilder().
+		WithKeyCondition(keyCond).
+		Build()
+	if err != nil {
+		log.Println("Error building expression", err.Error())
+		return nil, nil, err
+	}
+
+
 	input := &dynamodb.QueryInput{
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":iid": {
-				S: aws.String(txnId),
-			},
-		},
-		KeyConditionExpression: aws.String("transactionId = :iid"),
+		ExpressionAttributeNames:expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		KeyConditionExpression: expr.KeyCondition(),
 		TableName:              aws.String(instanceTable),
 	}
 
 	qout, err := awsContext.DynamoDBSvc.Query(input)
 	if err != nil {
+		log.Println("Error executing DynamoDB query")
 		return nil, nil, err
 	}
 
