@@ -62,6 +62,7 @@ func (m *ModelSvc) ListModels(awsContext *awsctx.AWSContext, tenant string) ([]s
 		ExpressionAttributeNames:expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression: expr.KeyCondition(),
+		IndexName: aws.String("modelsByTenant"),
 		TableName:              aws.String(modelTable),
 	}
 
