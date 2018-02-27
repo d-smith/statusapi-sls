@@ -196,10 +196,16 @@ resources:
           -
             AttributeName: name
             AttributeType: S
+          -
+            AttributeName: tenant
+            AttributeType: S
         KeySchema:
           -
             AttributeName: name
             KeyType: HASH
+          -
+            AttributeName: tenant
+            KeyType: RANGE
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1

@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/d-smith/statusapi-sls/awsctx"
 	"os"
+	"log"
 )
 
 type Model struct {
@@ -44,49 +45,62 @@ func l2slice(l []*dynamodb.AttributeValue) []string {
 	return s
 }
 
-func (m *ModelSvc) ListModels(awsContext *awsctx.AWSContext) ([]string, error) {
+func (m *ModelSvc) ListModels(awsContext *awsctx.AWSContext, tenant string) ([]string, error) {
+	log.Println("ModelSvc ListModels")
+	keyCond := expression.Key("tenant").Equal(expression.Value(tenant))
 
-	proj := expression.NamesList(expression.Name("name"))
-	expr, err := expression.NewBuilder().WithProjection(proj).Build()
+	expr, err := expression.NewBuilder().
+		WithKeyCondition(keyCond).
+		Build()
 	if err != nil {
-		fmt.Println(nil, err)
+		log.Println("Error building expression", err.Error())
+		return nil,  err
 	}
 
-	input := &dynamodb.ScanInput{
-		ExpressionAttributeNames: expr.Names(),
-		ProjectionExpression:     expr.Projection(),
-		TableName:                aws.String(modelTable),
+
+	input := &dynamodb.QueryInput{
+		ExpressionAttributeNames:expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		KeyConditionExpression: expr.KeyCondition(),
+		TableName:              aws.String(modelTable),
 	}
 
-	result, err := awsContext.DynamoDBSvc.Scan(input)
+	qout, err := awsContext.DynamoDBSvc.Query(input)
 	if err != nil {
+		log.Println("Error executing DynamoDB query")
 		return nil, err
 	}
 
+
 	var models = []string{}
-	for _, item := range result.Items {
+	for _, item := range qout.Items {
 		models = append(models, *item["name"].S)
 	}
 
 	return models, nil
 }
 
-func (m *ModelSvc) getModel(awsContext *awsctx.AWSContext, modelName string) (*dynamodb.GetItemOutput, error) {
+func (m *ModelSvc) getModel(awsContext *awsctx.AWSContext, tenant, modelName string) (*dynamodb.GetItemOutput, error) {
 	input := &dynamodb.GetItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
 			"name": {
 				S: aws.String(modelName),
+			},
+			"tenant": {
+				S: aws.String(tenant),
 			},
 		},
 		TableName: aws.String(modelTable),
 	}
 
 	return awsContext.DynamoDBSvc.GetItem(input)
+
+
 }
 
-func (m *ModelSvc) GetStepsForModel(awsContext *awsctx.AWSContext, modelName string) ([]string, error) {
+func (m *ModelSvc) GetStepsForModel(awsContext *awsctx.AWSContext, tenant,modelName string) ([]string, error) {
 
-	result, err := m.getModel(awsContext, modelName)
+	result, err := m.getModel(awsContext, tenant, modelName)
 	if err != nil {
 		return nil, err
 	}
@@ -96,8 +110,8 @@ func (m *ModelSvc) GetStepsForModel(awsContext *awsctx.AWSContext, modelName str
 	return l2slice(steps), nil
 }
 
-func (m *ModelSvc) GetModel(awsContext *awsctx.AWSContext, modelName string) (*Model, error) {
-	result, err := m.getModel(awsContext, modelName)
+func (m *ModelSvc) GetModel(awsContext *awsctx.AWSContext, tenant,modelName string) (*Model, error) {
+	result, err := m.getModel(awsContext, tenant,modelName)
 	if err != nil {
 		return nil, err
 	}
@@ -110,16 +124,20 @@ func (m *ModelSvc) GetModel(awsContext *awsctx.AWSContext, modelName string) (*M
 	return model, nil
 }
 
-func (m *ModelSvc) CreateModel(awsContext *awsctx.AWSContext, model *Model) error {
+func (m *ModelSvc) CreateModel(awsContext *awsctx.AWSContext, tenant string, model *Model) error {
 	fmt.Printf("Creating model %s with steps %v", model.Name, model.Steps)
 
 	uniqueName := expression.AttributeNotExists(expression.Name("name"))
-	uniqueNameCond, _ := expression.NewBuilder().WithCondition(uniqueName).Build()
+	uniqueNameForTenant := uniqueName.And(expression.AttributeNotExists(expression.Name("tenant")))
+	uniqueNameCond, _ := expression.NewBuilder().WithCondition(uniqueNameForTenant).Build()
 
 	input := &dynamodb.PutItemInput{
 		Item: map[string]*dynamodb.AttributeValue{
 			"name": {
 				S: aws.String(model.Name),
+			},
+			"tenant": {
+				S: aws.String(tenant),
 			},
 			"steps": {
 				L: slice2L(model.Steps),
@@ -134,7 +152,7 @@ func (m *ModelSvc) CreateModel(awsContext *awsctx.AWSContext, model *Model) erro
 	return err
 }
 
-func (m *ModelSvc) UpdateModel(awsContext *awsctx.AWSContext, model *Model) error {
+func (m *ModelSvc) UpdateModel(awsContext *awsctx.AWSContext, tenant string,model *Model) error {
 	fmt.Printf("Updating model %s with steps %v", model.Name, model.Steps)
 
 	uniqueName := expression.AttributeExists(expression.Name("name"))
@@ -144,6 +162,9 @@ func (m *ModelSvc) UpdateModel(awsContext *awsctx.AWSContext, model *Model) erro
 		Item: map[string]*dynamodb.AttributeValue{
 			"name": {
 				S: aws.String(model.Name),
+			},
+			"tenant": {
+				S: aws.String(tenant),
 			},
 			"steps": {
 				L: slice2L(model.Steps),

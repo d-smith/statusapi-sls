@@ -35,7 +35,7 @@ func (is *InstanceSvc) StatusForInstance(awsContext *awsctx.AWSContext, tenant, 
 	log.Printf("completed: %v\n", completed)
 
 	log.Println("get steps events for model", modelName)
-	steps, err := modelSvc.GetStepsForModel(awsContext, modelName)
+	steps, err := modelSvc.GetStepsForModel(awsContext, tenant, modelName)
 	if err != nil {
 		return nil, err
 	}

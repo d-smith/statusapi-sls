@@ -18,9 +18,9 @@ var (
 	modelAPI = model.NewModelSvc()
 )
 
-func listModels(awsContext *awsctx.AWSContext) (events.APIGatewayProxyResponse, error) {
+func listModels(awsContext *awsctx.AWSContext, tenant string) (events.APIGatewayProxyResponse, error) {
 	fmt.Println("listModels")
-	models, err := modelAPI.ListModels(awsContext)
+	models, err := modelAPI.ListModels(awsContext, tenant)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}, nil
 	}
@@ -31,9 +31,9 @@ func listModels(awsContext *awsctx.AWSContext) (events.APIGatewayProxyResponse, 
 
 }
 
-func getModel(awsContext *awsctx.AWSContext, name string) (events.APIGatewayProxyResponse, error) {
+func getModel(awsContext *awsctx.AWSContext, tenant, name string) (events.APIGatewayProxyResponse, error) {
 	fmt.Println("getModel", name)
-	model, err := modelAPI.GetModel(awsContext, name)
+	model, err := modelAPI.GetModel(awsContext, tenant, name)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			if aerr.Code() == dynamodb.ErrCodeResourceNotFoundException {
@@ -56,8 +56,7 @@ func handleGet(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequ
 	fmt.Printf("request content: %+v", request.RequestContext)
 
 	authZContext := request.RequestContext.Authorizer
-	fmt.Println("tenant", authZContext["tenant"])
-	fmt.Println("principalId", authZContext["principalId"])
+	tenant :=  authZContext["tenant"].(string)
 
 	//Is there a name from the path?
 	var name string
@@ -67,9 +66,9 @@ func handleGet(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequ
 
 	switch name {
 	case "":
-		return listModels(awsContext)
+		return listModels(awsContext, tenant)
 	default:
-		return getModel(awsContext, name)
+		return getModel(awsContext, tenant,name)
 	}
 
 }
@@ -81,7 +80,9 @@ func handlePost(awsContext *awsctx.AWSContext, request events.APIGatewayProxyReq
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusBadRequest}, nil
 	}
 
-	err = modelAPI.CreateModel(awsContext, &model)
+	tenant := request.RequestContext.Authorizer["tenant"].(string)
+
+	err = modelAPI.CreateModel(awsContext, tenant, &model)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			if aerr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
@@ -101,7 +102,9 @@ func handlePut(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequ
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusBadRequest}, nil
 	}
 
-	err = modelAPI.UpdateModel(awsContext, &model)
+	tenant := request.RequestContext.Authorizer["tenant"].(string)
+
+	err = modelAPI.UpdateModel(awsContext, tenant, &model)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			if aerr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {

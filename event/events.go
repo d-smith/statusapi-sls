@@ -34,10 +34,10 @@ func (es *EventSvc) GetStatusEventsForTxn(awsContext *awsctx.AWSContext, tenant,
 
 	log.Println("EventSvc GetStatusEventsForTxn")
 	keyCond := expression.Key("transactionId").Equal(expression.Value(txnId))
-//	filt := expression.Name("tenant").Equal(expression.Value(tenant))
+	filt := expression.Name("tenant").Equal(expression.Value(tenant))
 
 	expr, err := expression.NewBuilder().
-//		WithFilter(filt).
+		WithFilter(filt).
 		WithKeyCondition(keyCond).
 		Build()
 	if err != nil {
@@ -50,7 +50,7 @@ func (es *EventSvc) GetStatusEventsForTxn(awsContext *awsctx.AWSContext, tenant,
 		ExpressionAttributeNames:expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression: expr.KeyCondition(),
-		//FilterExpression: expr.Filter(),
+		FilterExpression: expr.Filter(),
 		TableName:              aws.String(instanceTable),
 	}
 
@@ -92,10 +92,10 @@ func (es *EventSvc) GetStatusEventsForTxn(awsContext *awsctx.AWSContext, tenant,
 
 func (es *EventSvc) GetEventsForTxn(awsContext *awsctx.AWSContext, tenant, txnId string) ([]StatusEvent, error) {
 	keyCond := expression.Key("transactionId").Equal(expression.Value(txnId))
-//	filt := expression.Name("tenant").Equal(expression.Value(tenant))
+	filt := expression.Name("tenant").Equal(expression.Value(tenant))
 
 	expr, err := expression.NewBuilder().
-//		WithFilter(filt).
+		WithFilter(filt).
 		WithKeyCondition(keyCond).
 		Build()
 	if err != nil {
@@ -107,7 +107,7 @@ func (es *EventSvc) GetEventsForTxn(awsContext *awsctx.AWSContext, tenant, txnId
 		ExpressionAttributeNames:expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression: expr.KeyCondition(),
-		//FilterExpression:filt,
+		FilterExpression:expr.Filter(),
 		TableName:              aws.String(instanceTable),
 	}
 
@@ -146,6 +146,9 @@ func (es *EventSvc) StoreEvent(awsContext *awsctx.AWSContext, tenant string, eve
 		Item: map[string]*dynamodb.AttributeValue{
 			"transactionId": {
 				S: aws.String(event.TransactionId),
+			},
+			"tenant": {
+				S: aws.String(tenant),
 			},
 			"eventTimestamp": {
 				N: aws.String(fmt.Sprintf("%d", timestampMillis)),
