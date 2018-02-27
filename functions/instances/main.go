@@ -25,9 +25,10 @@ func listInstances() (events.APIGatewayProxyResponse, error) {
 	return events.APIGatewayProxyResponse{Body: "other\n", StatusCode: http.StatusOK}, nil
 }
 
-func getModelStates(awsContext *awsctx.AWSContext, id, model string) (events.APIGatewayProxyResponse, error) {
+func getModelStates(awsContext *awsctx.AWSContext, tenant, id, model string) (events.APIGatewayProxyResponse, error) {
 	log.Println("get model states")
-	states, err := instanceSvc.StatusForInstance(awsContext, id, model)
+
+	states, err := instanceSvc.StatusForInstance(awsContext, tenant, id, model)
 	if err != nil {
 		fmt.Println("Error building model states", err.Error())
 		return events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}, nil
@@ -42,8 +43,8 @@ func getModelStates(awsContext *awsctx.AWSContext, id, model string) (events.API
 	return events.APIGatewayProxyResponse{Body: string(bodyOut), StatusCode: http.StatusOK}, nil
 }
 
-func retrieveInstance(awsContext *awsctx.AWSContext, id string) (events.APIGatewayProxyResponse, error) {
-	txnEvents, err := eventsSvc.GetEventsForTxn(awsContext, id)
+func retrieveInstance(awsContext *awsctx.AWSContext, tenant, id string) (events.APIGatewayProxyResponse, error) {
+	txnEvents, err := eventsSvc.GetEventsForTxn(awsContext, tenant, id)
 	if err != nil {
 		fmt.Println("Error retrieving events", err.Error())
 		return events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}, nil
@@ -58,17 +59,19 @@ func retrieveInstance(awsContext *awsctx.AWSContext, id string) (events.APIGatew
 	return events.APIGatewayProxyResponse{Body: string(bodyOut), StatusCode: http.StatusOK}, nil
 }
 
-func getInstance(awsContext *awsctx.AWSContext, id string, queryStringParams map[string]string) (events.APIGatewayProxyResponse, error) {
+func getInstance(awsContext *awsctx.AWSContext, tenant, id string, queryStringParams map[string]string) (events.APIGatewayProxyResponse, error) {
 	fmt.Println("get instance\n")
 	model := queryStringParams["model"]
 	if model != "" {
-		return getModelStates(awsContext, id, model)
+		return getModelStates(awsContext, tenant, id, model)
 	}
 
-	return retrieveInstance(awsContext, id)
+	return retrieveInstance(awsContext, tenant, id)
 }
 
 func handleGet(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	tenant := request.RequestContext.Authorizer["tenant"]
+
 	//Is there an id from the path?
 	var id string
 	if len(request.PathParameters) > 0 {
@@ -79,7 +82,7 @@ func handleGet(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequ
 	case "":
 		return listInstances()
 	default:
-		return getInstance(awsContext, id, request.QueryStringParameters)
+		return getInstance(awsContext, tenant.(string), id, request.QueryStringParameters)
 	}
 
 }

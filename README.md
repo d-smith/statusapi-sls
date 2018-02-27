@@ -26,17 +26,23 @@ Example model definition:
 {"name":"model1", "steps":["s1", "s2", "s3"]}
 ```
 
+Getting an authentication token
+
+```
+curl --request POST --url 'https://<auth0 domain>/oauth/token' --header 'content-type: application/json' --data '{"grant_type":"http://auth0.com/oauth/grant-type/password-realm","username": "the-user-name","password": "the-password",  "client_id": "auth0 client id", "client_secret": "client secret", "realm": "Username-Password-Authentication"}'
+```
+
 Simple scenario - define a model, post some events, retrieve view
 of model based on instance state
 
 ```
-curl -H "x-api-key: XXXX" -XPOST -d '{"name":"model1", "steps":["s1", "s2", "s3"]}' https://ENDPOINT/dev/status/api/v1/models
+curl -H "Authorization: Bearer XXXX" -XPOST -d '{"name":"model1", "steps":["s1", "s2", "s3"]}' https://ENDPOINT/dev/status/api/v1/models
 
-curl -H "x-api-key: XXXX" -XPOST -d '{"txn_id":"1a","event_id":"1","step":"s1","step_state":"completed"}' https://ENDPOINT/dev/status/api/v1/events
+curl -H "Authorization: Bearer XXXX" -XPOST -d '{"txn_id":"1a","event_id":"1","step":"s1","step_state":"completed"}' https://ENDPOINT/dev/status/api/v1/events
 
-curl -H "x-api-key: XXXX" -XPOST -d '{"txn_id":"1a","event_id":"2","step":"s2","step_state":"completed"}' https://ENDPOINT/dev/status/api/v1/events
+curl -H "Authorization: Bearer XXXX" -XPOST -d '{"txn_id":"1a","event_id":"2","step":"s2","step_state":"completed"}' https://ENDPOINT/dev/status/api/v1/events
  
-curl -H "x-api-key: XXXX"  'https://ENDPOINT/dev/status/api/v1/instances/1a?model=model1'
+curl -H "Authorization: Bearer XXXX"  'https://ENDPOINT/dev/status/api/v1/instances/1a?model=model1'
 ```
 
 

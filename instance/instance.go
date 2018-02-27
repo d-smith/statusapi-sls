@@ -24,9 +24,9 @@ var (
 	eventSvc = event.NewEventSvc()
 )
 
-func (is *InstanceSvc) StatusForInstance(awsContext *awsctx.AWSContext, transactionId, modelName string) ([]StepState, error) {
+func (is *InstanceSvc) StatusForInstance(awsContext *awsctx.AWSContext, tenant, transactionId, modelName string) ([]StepState, error) {
 	log.Println("get status events for txn")
-	active, completed, err := eventSvc.GetStatusEventsForTxn(awsContext, transactionId)
+	active, completed, err := eventSvc.GetStatusEventsForTxn(awsContext, tenant, transactionId)
 	if err != nil {
 		return nil, err
 	}

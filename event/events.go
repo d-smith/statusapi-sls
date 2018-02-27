@@ -30,12 +30,14 @@ func NewEventSvc() *EventSvc {
 	return &EventSvc{}
 }
 
-func (es *EventSvc) GetStatusEventsForTxn(awsContext *awsctx.AWSContext, txnId string) (map[string]StatusEvent, map[string]StatusEvent, error) {
+func (es *EventSvc) GetStatusEventsForTxn(awsContext *awsctx.AWSContext, tenant, txnId string) (map[string]StatusEvent, map[string]StatusEvent, error) {
 
 	log.Println("EventSvc GetStatusEventsForTxn")
 	keyCond := expression.Key("transactionId").Equal(expression.Value(txnId))
+//	filt := expression.Name("tenant").Equal(expression.Value(tenant))
 
 	expr, err := expression.NewBuilder().
+//		WithFilter(filt).
 		WithKeyCondition(keyCond).
 		Build()
 	if err != nil {
@@ -48,6 +50,7 @@ func (es *EventSvc) GetStatusEventsForTxn(awsContext *awsctx.AWSContext, txnId s
 		ExpressionAttributeNames:expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression: expr.KeyCondition(),
+		//FilterExpression: expr.Filter(),
 		TableName:              aws.String(instanceTable),
 	}
 
@@ -87,10 +90,12 @@ func (es *EventSvc) GetStatusEventsForTxn(awsContext *awsctx.AWSContext, txnId s
 
 }
 
-func (es *EventSvc) GetEventsForTxn(awsContext *awsctx.AWSContext, txnId string) ([]StatusEvent, error) {
+func (es *EventSvc) GetEventsForTxn(awsContext *awsctx.AWSContext, tenant, txnId string) ([]StatusEvent, error) {
 	keyCond := expression.Key("transactionId").Equal(expression.Value(txnId))
+//	filt := expression.Name("tenant").Equal(expression.Value(tenant))
 
 	expr, err := expression.NewBuilder().
+//		WithFilter(filt).
 		WithKeyCondition(keyCond).
 		Build()
 	if err != nil {
@@ -102,6 +107,7 @@ func (es *EventSvc) GetEventsForTxn(awsContext *awsctx.AWSContext, txnId string)
 		ExpressionAttributeNames:expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression: expr.KeyCondition(),
+		//FilterExpression:filt,
 		TableName:              aws.String(instanceTable),
 	}
 
@@ -133,7 +139,7 @@ func (es *EventSvc) GetEventsForTxn(awsContext *awsctx.AWSContext, txnId string)
 	return events, err
 }
 
-func (es *EventSvc) StoreEvent(awsContext *awsctx.AWSContext, event *StatusEvent) error {
+func (es *EventSvc) StoreEvent(awsContext *awsctx.AWSContext, tenant string, event *StatusEvent) error {
 	now := time.Now()
 	timestampMillis := now.UnixNano() / 1000000
 	input := &dynamodb.PutItemInput{

@@ -120,6 +120,7 @@ func handleOtherRequests(request events.APIGatewayProxyRequest) (events.APIGatew
 
 func makeHandler(awsContext *awsctx.AWSContext) func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	return func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+
 		fmt.Println("Received body: ", request.Body)
 
 		var response events.APIGatewayProxyResponse
