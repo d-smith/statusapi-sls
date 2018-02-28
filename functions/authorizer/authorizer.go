@@ -127,8 +127,8 @@ func handleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 	fakeRequest.Header.Add("Authorization", token)
 	jot, err := validator.ValidateRequest(fakeRequest)
 	if err != nil {
-		log.Println("WARNING", err.Error())
-		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Invalid token")
+		log.Println("Error validating token via Auth0 validator", err.Error())
+		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Unauthorized")
 	}
 
 	claims := map[string]interface{}{}
@@ -136,7 +136,7 @@ func handleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 	err = validator.Claims(fakeRequest, jot, &claims)
 	if err != nil {
 		log.Println("Error looking at claims", err.Error())
-		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Invalid token")
+		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Unauthorized")
 	}
 
 	tenant,ok := claims["https://status.aps-dev.net/tenant"].(string)
