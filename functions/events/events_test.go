@@ -19,6 +19,13 @@ func (m *dynamoDBMockery) PutItem(item *dynamodb.PutItemInput) (*dynamodb.PutIte
 }
 
 func TestEventPost(t *testing.T) {
+
+	requestCtx := events.APIGatewayProxyRequestContext{
+		Authorizer:map[string]interface{}{
+			"tenant":"purple",
+		},
+	}
+
 	tests := []struct {
 		name    string
 		request events.APIGatewayProxyRequest
@@ -27,25 +34,25 @@ func TestEventPost(t *testing.T) {
 	}{
 		{
 			"handle full request",
-			events.APIGatewayProxyRequest{Body: `{"txn_id":"1a","event_id":"1","step":"Order Received","step_state":"active"}`},
+			events.APIGatewayProxyRequest{Body: `{"txn_id":"1a","event_id":"1","step":"Order Received","step_state":"active"}`, RequestContext:requestCtx},
 			200,
 			nil,
 		},
 		{
 			"valid step state - completed",
-			events.APIGatewayProxyRequest{Body: `{"txn_id":"1a","event_id":"1","step":"Order Received","step_state":"completed"}`},
+			events.APIGatewayProxyRequest{Body: `{"txn_id":"1a","event_id":"1","step":"Order Received","step_state":"completed"}`, RequestContext:requestCtx},
 			200,
 			nil,
 		},
 		{
 			"invalid step state",
-			events.APIGatewayProxyRequest{Body: `{"txn_id":"1a","event_id":"1","step":"Order Received","step_state":"dunno"}`},
+			events.APIGatewayProxyRequest{Body: `{"txn_id":"1a","event_id":"1","step":"Order Received","step_state":"dunno"}`, RequestContext:requestCtx},
 			400,
 			nil,
 		},
 		{
 			"handle wrong payload",
-			events.APIGatewayProxyRequest{Body: `{"states":Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "model1"}`},
+			events.APIGatewayProxyRequest{Body: `{"states":Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "model1"}`, RequestContext:requestCtx},
 			400,
 			nil,
 		},

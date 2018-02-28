@@ -24,9 +24,9 @@ var (
 	eventSvc = event.NewEventSvc()
 )
 
-func (is *InstanceSvc) StatusForInstance(awsContext *awsctx.AWSContext, transactionId, modelName string) ([]StepState, error) {
+func (is *InstanceSvc) StatusForInstance(awsContext *awsctx.AWSContext, tenant, transactionId, modelName string) ([]StepState, error) {
 	log.Println("get status events for txn")
-	active, completed, err := eventSvc.GetStatusEventsForTxn(awsContext, transactionId)
+	active, completed, err := eventSvc.GetStatusEventsForTxn(awsContext, tenant, transactionId)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func (is *InstanceSvc) StatusForInstance(awsContext *awsctx.AWSContext, transact
 	log.Printf("completed: %v\n", completed)
 
 	log.Println("get steps events for model", modelName)
-	steps, err := modelSvc.GetStepsForModel(awsContext, modelName)
+	steps, err := modelSvc.GetStepsForModel(awsContext, tenant, modelName)
 	if err != nil {
 		return nil, err
 	}

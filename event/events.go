@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"time"
+	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 )
 
 type StatusEvent struct {
@@ -29,19 +30,33 @@ func NewEventSvc() *EventSvc {
 	return &EventSvc{}
 }
 
-func (es *EventSvc) GetStatusEventsForTxn(awsContext *awsctx.AWSContext, txnId string) (map[string]StatusEvent, map[string]StatusEvent, error) {
+func (es *EventSvc) GetStatusEventsForTxn(awsContext *awsctx.AWSContext, tenant, txnId string) (map[string]StatusEvent, map[string]StatusEvent, error) {
+
+	log.Println("EventSvc GetStatusEventsForTxn")
+	keyCond := expression.Key("transactionId").Equal(expression.Value(txnId))
+	filt := expression.Name("tenant").Equal(expression.Value(tenant))
+
+	expr, err := expression.NewBuilder().
+		WithFilter(filt).
+		WithKeyCondition(keyCond).
+		Build()
+	if err != nil {
+		log.Println("Error building expression", err.Error())
+		return nil, nil, err
+	}
+
+
 	input := &dynamodb.QueryInput{
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":iid": {
-				S: aws.String(txnId),
-			},
-		},
-		KeyConditionExpression: aws.String("transactionId = :iid"),
+		ExpressionAttributeNames:expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		KeyConditionExpression: expr.KeyCondition(),
+		FilterExpression: expr.Filter(),
 		TableName:              aws.String(instanceTable),
 	}
 
 	qout, err := awsContext.DynamoDBSvc.Query(input)
 	if err != nil {
+		log.Println("Error executing DynamoDB query")
 		return nil, nil, err
 	}
 
@@ -75,14 +90,24 @@ func (es *EventSvc) GetStatusEventsForTxn(awsContext *awsctx.AWSContext, txnId s
 
 }
 
-func (es *EventSvc) GetEventsForTxn(awsContext *awsctx.AWSContext, txnId string) ([]StatusEvent, error) {
+func (es *EventSvc) GetEventsForTxn(awsContext *awsctx.AWSContext, tenant, txnId string) ([]StatusEvent, error) {
+	keyCond := expression.Key("transactionId").Equal(expression.Value(txnId))
+	filt := expression.Name("tenant").Equal(expression.Value(tenant))
+
+	expr, err := expression.NewBuilder().
+		WithFilter(filt).
+		WithKeyCondition(keyCond).
+		Build()
+	if err != nil {
+		log.Println("Error building expression", err.Error())
+		return nil, err
+	}
+
 	input := &dynamodb.QueryInput{
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":iid": {
-				S: aws.String(txnId),
-			},
-		},
-		KeyConditionExpression: aws.String("transactionId = :iid"),
+		ExpressionAttributeNames:expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		KeyConditionExpression: expr.KeyCondition(),
+		FilterExpression:expr.Filter(),
 		TableName:              aws.String(instanceTable),
 	}
 
@@ -114,13 +139,16 @@ func (es *EventSvc) GetEventsForTxn(awsContext *awsctx.AWSContext, txnId string)
 	return events, err
 }
 
-func (es *EventSvc) StoreEvent(awsContext *awsctx.AWSContext, event *StatusEvent) error {
+func (es *EventSvc) StoreEvent(awsContext *awsctx.AWSContext, tenant string, event *StatusEvent) error {
 	now := time.Now()
 	timestampMillis := now.UnixNano() / 1000000
 	input := &dynamodb.PutItemInput{
 		Item: map[string]*dynamodb.AttributeValue{
 			"transactionId": {
 				S: aws.String(event.TransactionId),
+			},
+			"tenant": {
+				S: aws.String(tenant),
 			},
 			"eventTimestamp": {
 				N: aws.String(fmt.Sprintf("%d", timestampMillis)),

@@ -19,6 +19,7 @@ type dynamoDBMockery struct {
 	dynamodbiface.DynamoDBAPI
 	names      map[string]string
 	scanresult *dynamodb.ScanOutput
+	queryResult *dynamodb.QueryOutput
 }
 
 func (m *dynamoDBMockery) PutItem(item *dynamodb.PutItemInput) (*dynamodb.PutItemOutput, error) {
@@ -47,6 +48,14 @@ func (m *dynamoDBMockery) Scan(input *dynamodb.ScanInput) (*dynamodb.ScanOutput,
 	return scanResult, nil
 }
 
+func (m *dynamoDBMockery) Query(input *dynamodb.QueryInput)(*dynamodb.QueryOutput, error) {
+	queryResult := m.queryResult
+	if queryResult == nil {
+		queryResult = &dynamodb.QueryOutput{}
+	}
+	return queryResult, nil
+}
+
 func (m *dynamoDBMockery) GetItem(input *dynamodb.GetItemInput) (*dynamodb.GetItemOutput, error) {
 	if *input.Key["name"].S != "model1" {
 		return nil, awserr.New(dynamodb.ErrCodeResourceNotFoundException, "nope", errors.New("whoops"))
@@ -66,7 +75,15 @@ func (m *dynamoDBMockery) GetItem(input *dynamodb.GetItemInput) (*dynamodb.GetIt
 	return out, nil
 }
 
+
+
 func TestModelCreate(t *testing.T) {
+	requestCtx := events.APIGatewayProxyRequestContext{
+		Authorizer:map[string]interface{}{
+			"tenant":"purple",
+		},
+	}
+
 	tests := []struct {
 		name    string
 		request events.APIGatewayProxyRequest
@@ -75,19 +92,19 @@ func TestModelCreate(t *testing.T) {
 	}{
 		{
 			"handle full request",
-			events.APIGatewayProxyRequest{HTTPMethod: "POST", Body: `{"steps": ["Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "model1"}`},
+			events.APIGatewayProxyRequest{HTTPMethod: "POST", Body: `{"steps": ["Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "model1"}`, RequestContext:requestCtx},
 			200,
 			nil,
 		},
 		{
 			"handle existing model",
-			events.APIGatewayProxyRequest{HTTPMethod: "POST", Body: `{"steps": ["Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "model1"}`},
+			events.APIGatewayProxyRequest{HTTPMethod: "POST", Body: `{"steps": ["Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "model1"}`, RequestContext:requestCtx},
 			400,
 			nil,
 		},
 		{
 			"handle malformed request",
-			events.APIGatewayProxyRequest{HTTPMethod: "POST", Body: `{"steps":Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "x"}`},
+			events.APIGatewayProxyRequest{HTTPMethod: "POST", Body: `{"steps":Order Received", "Assembling Pizza", "Cooking Pizza", "Pizza Ready"], "name": "x"}`, RequestContext:requestCtx},
 			400,
 			nil,
 		},
@@ -109,8 +126,8 @@ func TestModelCreate(t *testing.T) {
 	}
 }
 
-func makeOutputWithModelName(names ...string) *dynamodb.ScanOutput {
-	scanOutput := &dynamodb.ScanOutput{}
+func makeOutputWithModelName(names ...string) *dynamodb.QueryOutput {
+	scanOutput := &dynamodb.QueryOutput{}
 	for _, name := range names {
 		itemdata := make(map[string]*dynamodb.AttributeValue)
 		itemdata["name"] = &dynamodb.AttributeValue{S: aws.String(name)}
@@ -121,25 +138,31 @@ func makeOutputWithModelName(names ...string) *dynamodb.ScanOutput {
 }
 
 func TestModelList(t *testing.T) {
+	requestCtx := events.APIGatewayProxyRequestContext{
+		Authorizer:map[string]interface{}{
+			"tenant":"purple",
+		},
+	}
+
 	tests := []struct {
 		name       string
 		request    events.APIGatewayProxyRequest
-		scanResult *dynamodb.ScanOutput
+		scanResult *dynamodb.QueryOutput
 		expect     int
 		payload    []string
 		err        error
 	}{
 		{
 			"no results",
-			events.APIGatewayProxyRequest{HTTPMethod: "GET"},
-			&dynamodb.ScanOutput{},
+			events.APIGatewayProxyRequest{HTTPMethod: "GET", RequestContext:requestCtx},
+			&dynamodb.QueryOutput{},
 			200,
 			nil,
 			nil,
 		},
 		{
 			"one results",
-			events.APIGatewayProxyRequest{HTTPMethod: "GET"},
+			events.APIGatewayProxyRequest{HTTPMethod: "GET", RequestContext:requestCtx},
 			makeOutputWithModelName("model1"),
 			200,
 			[]string{"model1"},
@@ -147,7 +170,7 @@ func TestModelList(t *testing.T) {
 		},
 		{
 			"two results",
-			events.APIGatewayProxyRequest{HTTPMethod: "GET"},
+			events.APIGatewayProxyRequest{HTTPMethod: "GET", RequestContext:requestCtx},
 			makeOutputWithModelName("model1", "model2"),
 			200,
 			[]string{"model1", "model2"},
@@ -162,7 +185,7 @@ func TestModelList(t *testing.T) {
 	handler := makeHandler(&awsContext)
 
 	for _, test := range tests {
-		myMock.scanresult = test.scanResult
+		myMock.queryResult = test.scanResult
 		t.Run(test.name, func(t *testing.T) {
 			response, err := handler(test.request)
 
@@ -180,6 +203,13 @@ func TestModelList(t *testing.T) {
 }
 
 func TestModelGet(t *testing.T) {
+
+	requestCtx := events.APIGatewayProxyRequestContext{
+		Authorizer:map[string]interface{}{
+			"tenant":"purple",
+		},
+	}
+
 	tests := []struct {
 		name       string
 		request    events.APIGatewayProxyRequest
@@ -189,7 +219,7 @@ func TestModelGet(t *testing.T) {
 	}{
 		{
 			"model1",
-			events.APIGatewayProxyRequest{HTTPMethod: "GET", PathParameters: map[string]string{"name": "model1"}},
+			events.APIGatewayProxyRequest{HTTPMethod: "GET", PathParameters: map[string]string{"name": "model1"}, RequestContext:requestCtx},
 			&dynamodb.ScanOutput{},
 			200,
 			nil,

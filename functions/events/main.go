@@ -33,6 +33,8 @@ func checkInputs(event *event.StatusEvent) error {
 func processRequest(awsContext *awsctx.AWSContext, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	fmt.Println("Received body: ", request.Body)
 
+	tenant := request.RequestContext.Authorizer["tenant"].(string)
+
 	var event event.StatusEvent
 
 	err := json.Unmarshal([]byte(request.Body), &event)
@@ -45,9 +47,9 @@ func processRequest(awsContext *awsctx.AWSContext, request events.APIGatewayProx
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
 	}
 
-	err = eventAPI.StoreEvent(awsContext, &event)
+	err = eventAPI.StoreEvent(awsContext, tenant, &event)
 
-	fmt.Printf("event %s processed\n", event.EventId)
+	fmt.Printf("event %s processed for tenant %s\n", event.EventId, tenant)
 
 	return events.APIGatewayProxyResponse{StatusCode: 200}, nil
 }
