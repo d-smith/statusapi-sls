@@ -52,7 +52,7 @@ Note: this is still being fleshed out
 
 The basic premise is:
 
-1. Set up users in an Auto0 domain, and include a tenant attribute in
+1. Set up user in an [Auth0](https://auth0.com/) domain, and include a tenant attribute in
 their user_metadata
 
 2. Use a rule to inject the tenant as a claim into the identity token
